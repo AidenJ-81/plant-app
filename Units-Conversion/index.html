@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>단위 변환 Tool</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+  :root {
+    --navy:       #0f2044;
+    --navy2:      #162d5a;
+    --navy3:      #1e3a70;
+    --accent:     #3b82f6;
+    --accent2:    #2563eb;
+    --green:      #22c55e;
+    --green-bg:   #dcfce7;
+    --ink:        #1e293b;
+    --ink2:       #334155;
+    --muted:      #64748b;
+    --muted2:     #94a3b8;
+    --line:       #e2e8f0;
+    --line2:      #cbd5e1;
+    --panel:      #f1f5f9;
+    --bg:         #e8edf5;
+    --card:       #ffffff;
+    --shadow-sm:  0 1px 3px rgba(15,32,68,.07), 0 1px 2px rgba(15,32,68,.05);
+    --shadow-md:  0 4px 12px rgba(15,32,68,.10), 0 2px 4px rgba(15,32,68,.06);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: "Pretendard","Malgun Gothic","맑은 고딕",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+  }
+  .app { display: flex; flex-direction: column; height: 100vh; min-height: 0; }
+
+  /* ===== HEADER ===== */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 24px;
+    height: 56px; flex: 0 0 56px;
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy3) 100%);
+    box-shadow: 0 2px 8px rgba(0,0,0,.28);
+    position: relative; z-index: 10;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .logo {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: rgba(255,255,255,.15);
+    border: 1px solid rgba(255,255,255,.22);
+    display: flex; align-items: center; justify-content: center; color: #fff;
+    flex-shrink: 0;
+  }
+  .brand-text .title {
+    font-size: 17px; font-weight: 700; color: #fff; letter-spacing: -.2px; line-height: 1.2;
+  }
+  .brand-text .sub {
+    font-size: 11px; color: rgba(255,255,255,.55); margin-top: 1px;
+  }
+  .topbar-right { display: flex; align-items: center; gap: 8px; }
+
+  /* header badge */
+  .hdr-badge {
+    font-size: 11px; font-weight: 600; color: rgba(255,255,255,.8);
+    background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.2);
+    padding: 3px 10px; border-radius: 999px;
+  }
+
+  /* header buttons */
+  .hdr-btn {
+    padding: 6px 14px; border-radius: 7px; font-size: 12.5px; font-weight: 600;
+    font-family: inherit; cursor: pointer; transition: all .13s;
+    display: flex; align-items: center; gap: 6px; white-space: nowrap;
+  }
+  .hdr-btn-outline {
+    background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3); color: #fff;
+  }
+  .hdr-btn-outline:hover { background: rgba(255,255,255,.25); }
+  .hdr-btn-solid {
+    background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3); color: #fff;
+  }
+  .hdr-btn-solid:hover { background: rgba(255,255,255,.25); }
+
+  /* ===== BODY LAYOUT ===== */
+  .body { display: flex; flex: 1 1 auto; min-height: 0; gap: 0; }
+
+  /* ===== SIDEBAR ===== */
+  .sidebar {
+    width: 300px; flex: 0 0 300px;
+    padding: 16px 14px;
+    overflow-y: auto; background: var(--bg);
+    border-right: 1px solid var(--line2);
+    display: flex; flex-direction: column; gap: 12px;
+  }
+
+  /* section card */
+  .sec-card {
+    background: var(--card); border-radius: 10px;
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+  .sec-header {
+    display: flex; align-items: center; gap: 9px;
+    padding: 10px 13px 9px;
+    border-bottom: 1px solid var(--line);
+    background: var(--panel);
+  }
+  .sec-num {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--navy); color: #fff;
+    font-size: 11px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .sec-title { font-size: 12.5px; font-weight: 700; color: var(--ink); }
+  .sec-title .sec-sub { font-size: 11px; color: var(--muted); font-weight: 400; margin-left: 5px; }
+  .sec-body { padding: 11px 13px; }
+
+  /* category chips */
+  .cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .chip {
+    padding: 8px 7px; border: 1px solid var(--line2); border-radius: 7px;
+    background: var(--panel); font-size: 12.5px; font-weight: 500; cursor: pointer;
+    text-align: center; color: var(--ink2); transition: all .12s; line-height: 1.25;
+    font-family: inherit;
+  }
+  .chip .en { display: block; font-size: 9.5px; color: var(--muted2); font-weight: 400; margin-top: 1px; }
+  .chip:hover { border-color: var(--accent); color: var(--accent2); background: #eff6ff; }
+  .chip.active { background: var(--navy); color: #fff; border-color: var(--navy); }
+  .chip.active .en { color: rgba(255,255,255,.6); }
+
+  /* form fields */
+  .field { margin-bottom: 9px; }
+  .field:last-child { margin-bottom: 0; }
+  .field label { display: block; font-size: 11.5px; color: var(--muted); margin-bottom: 4px; font-weight: 500; }
+  .field label .lbl-en { color: var(--muted2); font-weight: 400; }
+  input[type=text], select {
+    width: 100%; padding: 8px 10px; border: 1px solid var(--line2); border-radius: 7px;
+    font-size: 13.5px; font-family: inherit; color: var(--ink); background: var(--card); outline: none;
+    transition: border-color .12s, box-shadow .12s;
+  }
+  input[type=text] { font-variant-numeric: tabular-nums; font-weight: 700; }
+  input[type=text]:focus, select:focus {
+    border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,.14);
+  }
+  select {
+    cursor: pointer; appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2 4l4 4 4-4' stroke='%2364748b' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px;
+  }
+  .two { display: flex; gap: 8px; }
+  .two > * { flex: 1; }
+
+  /* reset btn in sidebar */
+  .reset-btn {
+    width: 100%; padding: 8px; border: 1px solid var(--line2);
+    background: var(--card); color: var(--muted); border-radius: 8px; font-size: 12.5px;
+    font-family: inherit; cursor: pointer; font-weight: 500; transition: all .12s;
+  }
+  .reset-btn:hover { border-color: var(--accent); color: var(--accent2); }
+
+  .ref { font-size: 10.5px; color: var(--muted2); line-height: 1.75; padding: 0 2px; }
+  .ref b { color: var(--muted); font-weight: 600; display: block; margin-bottom: 2px; }
+
+  /* ===== MAIN RESULT AREA ===== */
+  .main { flex: 1 1 auto; min-width: 0; overflow-y: auto; padding: 18px 20px; }
+
+  .result-head {
+    background: var(--card); border-radius: 10px; border: 1px solid var(--line);
+    padding: 14px 18px; margin-bottom: 14px; box-shadow: var(--shadow-sm);
+  }
+  .result-head .cat-label { font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: .2px; }
+  .result-head .cat-name { font-size: 15px; font-weight: 700; color: var(--ink); margin-top: 2px; }
+  .result-head .cat-name .en { font-size: 12px; color: var(--muted); font-weight: 500; margin-left: 6px; }
+  .expr {
+    margin-top: 6px; font-size: 22px; font-weight: 700; letter-spacing: -.3px;
+    font-variant-numeric: tabular-nums; color: var(--ink); line-height: 1.2;
+  }
+  .expr .from-u { color: var(--accent2); }
+  .expr .eq { color: var(--muted2); font-weight: 400; margin: 0 6px; }
+  .hint { font-size: 11.5px; color: var(--muted2); margin-top: 5px; }
+
+  /* result grid */
+  .result-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(265px, 1fr)); gap: 8px; }
+  .row {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 11px 14px; border: 1px solid var(--line); border-radius: 9px;
+    background: var(--card); cursor: pointer; transition: all .12s; box-shadow: var(--shadow-sm);
+  }
+  .row:hover { border-color: var(--accent); box-shadow: var(--shadow-md); transform: translateY(-1px); }
+  .row.active { background: #eff6ff; border-color: var(--accent2); }
+  .row .left { min-width: 0; }
+  .row .sym { font-size: 14px; font-weight: 700; color: var(--ink); }
+  .row.active .sym { color: var(--accent2); }
+  .row .nm { font-size: 11px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row .right { text-align: right; flex: 0 0 auto; max-width: 58%; }
+  .row .val {
+    font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums;
+    letter-spacing: -.3px; color: var(--accent2); overflow-wrap: anywhere; line-height: 1.2;
+  }
+  .row.active .val { color: var(--navy); }
+  .row .copy { font-size: 10px; color: var(--muted2); margin-top: 2px; }
+  .row:hover .copy { color: var(--accent); }
+  .row.active .copy { color: var(--accent2); }
+
+  /* ===== TOAST ===== */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%;
+    transform: translateX(-50%) translateY(16px);
+    background: var(--navy); color: #fff; padding: 9px 18px; border-radius: 999px;
+    font-size: 13px; font-weight: 500; opacity: 0; pointer-events: none;
+    transition: all .22s ease; z-index: 200;
+    box-shadow: 0 8px 24px rgba(0,0,0,.22);
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ===== MODAL ===== */
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 100;
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+    animation: fadeIn .15s ease;
+  }
+  @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+  .modal {
+    background: var(--card); border-radius: 14px; width: 100%; max-width: 640px;
+    max-height: 88vh; display: flex; flex-direction: column;
+    box-shadow: 0 24px 64px rgba(0,0,0,.28); overflow: hidden;
+    animation: slideUp .18s ease;
+  }
+  @keyframes slideUp { from{transform:translateY(10px);opacity:0} to{transform:translateY(0);opacity:1} }
+  .modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 20px;
+    height: 52px; flex: 0 0 52px;
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy3) 100%);
+  }
+  .modal-title { font-size: 14px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px; }
+  .modal-header-actions { display: flex; align-items: center; gap: 8px; }
+  .modal-close {
+    width: 28px; height: 28px; border: 1px solid rgba(255,255,255,.3); background: rgba(255,255,255,.1);
+    cursor: pointer; border-radius: 6px; display: flex; align-items: center; justify-content: center;
+    font-size: 16px; color: rgba(255,255,255,.8); transition: all .12s;
+  }
+  .modal-close:hover { background: rgba(255,255,255,.22); color: #fff; }
+  .modal-body { flex: 1 1 auto; overflow-y: auto; padding: 18px 20px; }
+  .modal-footer {
+    padding: 12px 20px; border-top: 1px solid var(--line); flex: 0 0 auto;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    background: var(--panel);
+  }
+
+  /* edit mode banner */
+  .edit-banner {
+    background: #fef9c3; border-bottom: 1px solid #fde047;
+    padding: 8px 20px; font-size: 12px; color: #854d0e; font-weight: 500;
+    display: flex; align-items: center; gap: 7px; flex: 0 0 auto;
+  }
+
+  /* modal action buttons */
+  .mbtn {
+    padding: 7px 14px; border-radius: 7px; font-size: 12.5px; font-weight: 600;
+    font-family: inherit; cursor: pointer; transition: all .12s;
+    border: 1px solid transparent; display: flex; align-items: center; gap: 5px;
+  }
+  .mbtn-outline { background: var(--card); border-color: var(--line2); color: var(--ink); }
+  .mbtn-outline:hover { border-color: var(--accent); color: var(--accent2); }
+  .mbtn-navy { background: var(--navy); color: #fff; border-color: var(--navy); }
+  .mbtn-navy:hover { background: var(--navy2); }
+  .mbtn-warn { background: var(--card); border-color: #f59e0b; color: #b45309; }
+  .mbtn-warn:hover { background: #fffbeb; }
+  .mbtn-edit-on { background: #fef3c7; border-color: #fde047; color: #92400e; }
+
+  /* help content */
+  .help-section { margin-bottom: 20px; }
+  .help-section:last-child { margin-bottom: 0; }
+  .help-section-title {
+    font-size: 12.5px; font-weight: 700; color: var(--ink); margin-bottom: 7px;
+    padding-bottom: 5px; border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .help-text { font-size: 13px; color: var(--ink2); line-height: 1.75; }
+  .help-note {
+    background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px;
+    padding: 10px 13px; font-size: 12.5px; color: #9a3412; line-height: 1.65;
+  }
+  .help-formula {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+    padding: 10px 13px; font-size: 12.5px; font-family: "Courier New",monospace;
+    color: var(--ink); line-height: 1.7;
+  }
+  .help-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .help-table th {
+    background: var(--panel); padding: 7px 10px; text-align: left;
+    font-weight: 600; font-size: 11.5px; color: var(--muted);
+    border: 1px solid var(--line);
+  }
+  .help-table td {
+    padding: 7px 10px; border: 1px solid var(--line); color: var(--ink2);
+    vertical-align: top; line-height: 1.5;
+  }
+  .help-table tr:hover td { background: #f8faff; }
+
+  [contenteditable=true] { outline: none; border-radius: 3px; transition: background .1s; }
+  [contenteditable=true]:focus { background: #fef9c3; box-shadow: 0 0 0 2px #fde047; }
+  [contenteditable=true]:hover:not(:focus) { background: #fffde7; }
+
+  @media (max-width: 760px) {
+    .body { flex-direction: column; }
+    .sidebar { width: 100%; flex: 0 0 auto; border-right: none; border-bottom: 1px solid var(--line2); }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div class="toast" id="toast"></div>
+
+<script type="text/babel">
+const { useState, useRef, useCallback, useEffect } = React;
+
+/* ============================================================
+   ★★★ 이 블록만 수정하세요 (HELP_CONTENT START) ★★★
+   ============================================================ */
+const HELP_CONTENT = {
+  title: "단위 변환 도구 도움말",
+  sections: [
+    {
+      id: "overview",
+      title: "앱 개요",
+      type: "text",
+      content: "본 도구는 **공학 실무**에서 자주 사용되는 **15개 물리량 카테고리**의 단위를 빠르게 환산합니다. SI 단위계(ISO 80000) 및 ASME·API 표준 환산 계수를 기준으로 하며, 별도 설치 없이 **브라우저에서 바로 사용**할 수 있습니다."
+    },
+    {
+      id: "categories",
+      title: "지원 카테고리",
+      type: "table",
+      headers: ["카테고리", "영문명", "기준 단위", "포함 단위 수"],
+      rows: [
+        ["길이", "Length", "m", "9"],
+        ["면적", "Area", "m²", "8"],
+        ["부피", "Volume", "m³", "9"],
+        ["질량", "Mass", "kg", "7"],
+        ["밀도", "Density", "kg/m³", "6"],
+        ["힘", "Force", "N", "5"],
+        ["압력", "Pressure", "Pa", "10"],
+        ["온도", "Temperature", "°C", "4"],
+        ["에너지", "Energy", "J", "7"],
+        ["동력", "Power", "W", "8"],
+        ["속도", "Velocity", "m/s", "7"],
+        ["체적유량", "Volumetric Flow", "m³/s", "8"],
+        ["질량유량", "Mass Flow", "kg/s", "7"],
+        ["동점도", "Dynamic Viscosity", "Pa·s", "6"],
+        ["동점도(운동)", "Kinematic Viscosity", "m²/s", "6"]
+      ]
+    },
+    {
+      id: "usage",
+      title: "사용 방법",
+      type: "text",
+      content: "① 좌측 **변환 카테고리**에서 원하는 물리량을 선택하세요.\n② **값(Value)** 입력란에 변환할 숫자를 입력하세요.\n③ **기준 단위(From)**에서 입력값의 단위를 선택하세요.\n④ 우측 결과 카드에 모든 단위로 변환된 값이 실시간으로 표시됩니다.\n⑤ 결과 카드를 **클릭**하면 값이 복사되고 해당 단위가 새 기준 단위로 전환됩니다."
+    },
+    {
+      id: "options",
+      title: "표시 옵션",
+      type: "table",
+      headers: ["옵션", "설명"],
+      rows: [
+        ["유효숫자", "결과값의 유효숫자 개수를 3~10 사이에서 설정합니다. 기본값은 6입니다."],
+        ["표기법 – 자동", "값의 크기에 따라 일반 표기(소수)와 지수 표기를 자동으로 전환합니다."],
+        ["표기법 – 지수", "모든 결과를 1.23e+4 형태의 지수(과학적) 표기법으로 표시합니다."],
+        ["초기화", "카테고리·단위·옵션을 모두 초기 상태(길이, m, 유효숫자 6)로 되돌립니다."]
+      ]
+    },
+    {
+      id: "conversion",
+      title: "환산 방식",
+      type: "formula",
+      content: "일반 단위: 결과 = 입력값 × (from 인수) ÷ (to 인수)\n온도(비선형): °C 중간값 경유 → fromC(toC(x)) 방식\n기준 단위: 각 카테고리의 SI 기본 단위를 중간 매개로 사용"
+    },
+    {
+      id: "notice",
+      title: "주의사항",
+      type: "note",
+      content: "⚠️ 본 결과는 **예비 검토 목적**으로만 사용하십시오.\n실제 설계·시공·법적 판단에는 공인된 기준서 및 전문가의 검토를 반드시 거치시기 바랍니다.\n환산 계수 출처: SI / ISO 80000, ASME · API 표준 (칼로리=IT 4.1868 J, BTU=IT, hp=기계마력 기준)"
+    }
+  ]
+};
+/* ============================================================
+   ★★★ 이 블록만 수정하세요 (HELP_CONTENT END) ★★★
+}; // end HELP_CONTENT
+   ============================================================ */
+
+/* ============================================================
+   Conversion data
+   ============================================================ */
+const CATEGORIES = [
+  { id:"length", ko:"길이", en:"Length", base:"m", units:[
+      {sym:"mm", nm:"밀리미터", f:0.001},
+      {sym:"cm", nm:"센티미터", f:0.01},
+      {sym:"m",  nm:"미터", f:1},
+      {sym:"km", nm:"킬로미터", f:1000},
+      {sym:"µm", nm:"마이크로미터", f:1e-6},
+      {sym:"in", nm:"인치", f:0.0254},
+      {sym:"ft", nm:"피트", f:0.3048},
+      {sym:"yd", nm:"야드", f:0.9144},
+      {sym:"mile", nm:"마일", f:1609.344},
+  ]},
+  { id:"area", ko:"면적", en:"Area", base:"m²", units:[
+      {sym:"mm²", nm:"제곱밀리미터", f:1e-6},
+      {sym:"cm²", nm:"제곱센티미터", f:1e-4},
+      {sym:"m²",  nm:"제곱미터", f:1},
+      {sym:"km²", nm:"제곱킬로미터", f:1e6},
+      {sym:"ha",  nm:"헥타르", f:1e4},
+      {sym:"in²", nm:"제곱인치", f:0.00064516},
+      {sym:"ft²", nm:"제곱피트", f:0.09290304},
+      {sym:"acre",nm:"에이커", f:4046.8564224},
+  ]},
+  { id:"volume", ko:"부피", en:"Volume", base:"m³", units:[
+      {sym:"mL", nm:"밀리리터", f:1e-6},
+      {sym:"cm³",nm:"세제곱센티미터", f:1e-6},
+      {sym:"L",  nm:"리터", f:0.001},
+      {sym:"m³", nm:"세제곱미터", f:1},
+      {sym:"in³",nm:"세제곱인치", f:1.6387064e-5},
+      {sym:"ft³",nm:"세제곱피트", f:0.028316846592},
+      {sym:"gal(US)",nm:"미국 갤런", f:0.003785411784},
+      {sym:"gal(UK)",nm:"영국 갤런", f:0.00454609},
+      {sym:"bbl", nm:"배럴(오일,42gal)", f:0.158987294928},
+  ]},
+  { id:"mass", ko:"질량", en:"Mass", base:"kg", units:[
+      {sym:"mg", nm:"밀리그램", f:1e-6},
+      {sym:"g",  nm:"그램", f:0.001},
+      {sym:"kg", nm:"킬로그램", f:1},
+      {sym:"t",  nm:"톤(metric)", f:1000},
+      {sym:"oz", nm:"온스", f:0.028349523125},
+      {sym:"lb", nm:"파운드", f:0.45359237},
+      {sym:"ton(US)",nm:"숏톤", f:907.18474},
+  ]},
+  { id:"density", ko:"밀도", en:"Density", base:"kg/m³", units:[
+      {sym:"kg/m³", nm:"", f:1},
+      {sym:"g/cm³", nm:"", f:1000},
+      {sym:"g/mL",  nm:"", f:1000},
+      {sym:"kg/L",  nm:"", f:1000},
+      {sym:"lb/ft³",nm:"", f:16.018463373947},
+      {sym:"lb/gal(US)",nm:"", f:119.8264273},
+  ]},
+  { id:"force", ko:"힘", en:"Force", base:"N", units:[
+      {sym:"N",   nm:"뉴턴", f:1},
+      {sym:"kN",  nm:"킬로뉴턴", f:1000},
+      {sym:"kgf", nm:"중량킬로그램", f:9.80665},
+      {sym:"lbf", nm:"파운드힘", f:4.4482216152605},
+      {sym:"dyn", nm:"다인", f:1e-5},
+  ]},
+  { id:"pressure", ko:"압력", en:"Pressure", base:"Pa", units:[
+      {sym:"Pa",  nm:"파스칼", f:1},
+      {sym:"kPa", nm:"킬로파스칼", f:1000},
+      {sym:"MPa", nm:"메가파스칼", f:1e6},
+      {sym:"bar", nm:"바", f:1e5},
+      {sym:"kgf/cm²", nm:"", f:98066.5},
+      {sym:"psi", nm:"lb/in²", f:6894.757293168},
+      {sym:"atm", nm:"기압", f:101325},
+      {sym:"mmHg",nm:"토르", f:133.322387415},
+      {sym:"mmH₂O",nm:"수두 mm", f:9.80665},
+      {sym:"mH₂O", nm:"수두 m", f:9806.65},
+  ]},
+  { id:"temp", ko:"온도", en:"Temperature", base:"°C", temp:true, units:[
+      {sym:"°C", nm:"섭씨", toC:x=>x,            fromC:c=>c},
+      {sym:"°F", nm:"화씨", toC:x=>(x-32)*5/9,   fromC:c=>c*9/5+32},
+      {sym:"K",  nm:"켈빈", toC:x=>x-273.15,     fromC:c=>c+273.15},
+      {sym:"°R", nm:"랭킨", toC:x=>(x-491.67)*5/9, fromC:c=>(c+273.15)*9/5},
+  ]},
+  { id:"energy", ko:"에너지", en:"Energy", base:"J", units:[
+      {sym:"J",   nm:"줄", f:1},
+      {sym:"kJ",  nm:"킬로줄", f:1000},
+      {sym:"MJ",  nm:"메가줄", f:1e6},
+      {sym:"cal", nm:"칼로리(IT)", f:4.1868},
+      {sym:"kcal",nm:"킬로칼로리", f:4186.8},
+      {sym:"Wh",  nm:"와트시", f:3600},
+      {sym:"kWh", nm:"킬로와트시", f:3.6e6},
+      {sym:"BTU", nm:"영국열량단위", f:1055.05585262},
+      {sym:"ft·lbf",nm:"", f:1.3558179483314},
+  ]},
+  { id:"power", ko:"동력", en:"Power", base:"W", units:[
+      {sym:"W",     nm:"와트", f:1},
+      {sym:"kW",    nm:"킬로와트", f:1000},
+      {sym:"MW",    nm:"메가와트", f:1e6},
+      {sym:"hp",    nm:"기계마력", f:745.69987158227},
+      {sym:"PS",    nm:"미터마력", f:735.49875},
+      {sym:"kcal/h",nm:"", f:1.163},
+      {sym:"BTU/h", nm:"", f:0.29307107017},
+      {sym:"kgf·m/s",nm:"", f:9.80665},
+  ]},
+  { id:"velocity", ko:"속도", en:"Velocity", base:"m/s", units:[
+      {sym:"m/s",   nm:"", f:1},
+      {sym:"m/min", nm:"", f:0.0166666666667},
+      {sym:"km/h",  nm:"", f:0.277777777778},
+      {sym:"ft/s",  nm:"", f:0.3048},
+      {sym:"ft/min",nm:"", f:0.00508},
+      {sym:"mph",   nm:"마일/시", f:0.44704},
+      {sym:"knot",  nm:"노트", f:0.514444444444},
+  ]},
+  { id:"vflow", ko:"체적유량", en:"Volumetric Flow", base:"m³/s", units:[
+      {sym:"m³/s",  nm:"", f:1},
+      {sym:"m³/h",  nm:"", f:0.000277777777778},
+      {sym:"m³/min",nm:"", f:0.0166666666667},
+      {sym:"L/s",   nm:"", f:0.001},
+      {sym:"L/min", nm:"", f:1.66666666667e-5},
+      {sym:"L/h",   nm:"", f:2.77777777778e-7},
+      {sym:"ft³/min",nm:"CFM", f:0.000471947443},
+      {sym:"gal/min",nm:"GPM(US)", f:6.30901964e-5},
+  ]},
+  { id:"mflow", ko:"질량유량", en:"Mass Flow", base:"kg/s", units:[
+      {sym:"kg/s",  nm:"", f:1},
+      {sym:"kg/h",  nm:"", f:0.000277777777778},
+      {sym:"kg/min",nm:"", f:0.0166666666667},
+      {sym:"g/s",   nm:"", f:0.001},
+      {sym:"t/h",   nm:"톤/시", f:0.277777777778},
+      {sym:"lb/s",  nm:"", f:0.45359237},
+      {sym:"lb/h",  nm:"", f:0.000125997881944},
+  ]},
+  { id:"dynvisc", ko:"점도(동)", en:"Dynamic Viscosity", base:"Pa·s", units:[
+      {sym:"Pa·s",  nm:"", f:1},
+      {sym:"mPa·s", nm:"= cP", f:0.001},
+      {sym:"cP",    nm:"센티푸아즈", f:0.001},
+      {sym:"P",     nm:"푸아즈", f:0.1},
+      {sym:"kgf·s/m²",nm:"", f:9.80665},
+      {sym:"lb/(ft·s)",nm:"", f:1.488163944},
+  ]},
+  { id:"kinvisc", ko:"동점도", en:"Kinematic Viscosity", base:"m²/s", units:[
+      {sym:"m²/s",  nm:"", f:1},
+      {sym:"cm²/s", nm:"= St", f:1e-4},
+      {sym:"St",    nm:"스토크스", f:1e-4},
+      {sym:"cSt",   nm:"센티스토크스 = mm²/s", f:1e-6},
+      {sym:"mm²/s", nm:"= cSt", f:1e-6},
+      {sym:"ft²/s", nm:"", f:0.09290304},
+  ]},
+];
+
+/* ============================================================
+   Number formatting
+   ============================================================ */
+function fmt(v, sig, notation) {
+  if(v===null || v===undefined || Number.isNaN(v) || !isFinite(v)) return "—";
+  if(v===0) return "0";
+  const a = Math.abs(v);
+  if(notation==="sci" || (notation==="auto" && (a>=1e7 || a<1e-4))){
+    return v.toExponential(Math.max(0,sig-1));
+  }
+  const p = parseFloat(v.toPrecision(sig));
+  const intDigits = Math.max(1, Math.floor(Math.log10(Math.abs(p)))+1);
+  let dec = Math.max(0, sig - intDigits);
+  dec = Math.min(dec, 12);
+  return p.toLocaleString("en-US",{minimumFractionDigits:0, maximumFractionDigits:dec});
+}
+
+/* Conversion */
+function convert(value, cat, fromIdx, toIdx){
+  const from = cat.units[fromIdx], to = cat.units[toIdx];
+  if(cat.temp){ return to.fromC(from.toC(value)); }
+  return (value * from.f) / to.f;
+}
+
+/* Clipboard / Toast */
+function copyText(t){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t).catch(()=>fallbackCopy(t));
+  }else{ fallbackCopy(t); }
+}
+function fallbackCopy(t){
+  const ta=document.createElement("textarea");
+  ta.value=t; ta.style.position="fixed"; ta.style.opacity="0";
+  document.body.appendChild(ta); ta.select();
+  try{document.execCommand("copy");}catch(e){}
+  document.body.removeChild(ta);
+}
+let toastTimer=null;
+function showToast(msg){
+  const t=document.getElementById("toast");
+  t.textContent=msg; t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove("show"),1500);
+}
+
+/* renderInlineMarkdown */
+function renderInlineMarkdown(text) {
+  const parts = text.split("**");
+  return parts.map((part, i) => i % 2 === 1 ? <strong key={i}>{part}</strong> : part);
+}
+
+/* ============================================================
+   HelpModal
+   ============================================================ */
+function HelpModal({ onClose }) {
+  const [editMode, setEditMode] = useState(false);
+  const [content, setContent] = useState(() => JSON.parse(JSON.stringify(HELP_CONTENT)));
+  const [downloadDone, setDownloadDone] = useState(false);
+
+  const handleBackdrop = useCallback((e) => { if(e.target===e.currentTarget) onClose(); }, [onClose]);
+  useEffect(() => {
+    const h = (e) => { if(e.key==="Escape") onClose(); };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [onClose]);
+
+  const handleReset = () => setContent(JSON.parse(JSON.stringify(HELP_CONTENT)));
+
+  const handleDownload = () => {
+    const htmlEl = document.documentElement;
+    let src = htmlEl.outerHTML;
+    const newBlock =
+      "/* ============================================================\n" +
+      "   ★★★ 이 블록만 수정하세요 (HELP_CONTENT START) ★★★\n" +
+      "   ============================================================ */\n" +
+      "const HELP_CONTENT = " + JSON.stringify(content, null, 2) + ";\n" +
+      "/* ============================================================\n" +
+      "   ★★★ 이 블록만 수정하세요 (HELP_CONTENT END) ★★★\n" +
+      "}; // end HELP_CONTENT\n" +
+      "   ============================================================ */";
+    const startMarker = "/* ============================================================\n" +
+      "   ★★★ 이 블록만 수정하세요 (HELP_CONTENT START) ★★★\n" +
+      "   ============================================================ */";
+    const startIdx = src.indexOf(startMarker);
+    const endIdx = src.indexOf("}; // end HELP_CONTENT");
+    if(startIdx !== -1 && endIdx !== -1){
+      const closeComment = src.indexOf("*/", endIdx);
+      const blockEnd = src.indexOf("\n", closeComment) + 1;
+      src = src.slice(0, startIdx) + newBlock + "\n" + src.slice(blockEnd);
+    }
+    const blob = new Blob([src], {type:"text/html;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "index.html"; a.click();
+    URL.revokeObjectURL(url);
+    setDownloadDone(true);
+    setTimeout(() => setDownloadDone(false), 3000);
+  };
+
+  const updateField = (si, field, val) => setContent(prev => {
+    const n = JSON.parse(JSON.stringify(prev));
+    n.sections[si][field] = val; return n;
+  });
+  const updateCell = (si, ri, ci, val) => setContent(prev => {
+    const n = JSON.parse(JSON.stringify(prev));
+    n.sections[si].rows[ri][ci] = val; return n;
+  });
+  const updateHeader = (si, ci, val) => setContent(prev => {
+    const n = JSON.parse(JSON.stringify(prev));
+    n.sections[si].headers[ci] = val; return n;
+  });
+
+  const renderSection = (sec, si) => {
+    const edAttr = editMode ? {contentEditable:true, suppressContentEditableWarning:true} : {};
+    switch(sec.type) {
+      case "text": return (
+        <div className="help-text" {...edAttr}
+          onBlur={editMode ? e=>updateField(si,"content",e.target.innerText) : undefined}
+          style={editMode?{minHeight:"36px",padding:"3px",borderRadius:"4px"}:{}}
+        >
+          {editMode ? sec.content : sec.content.split("\n").map((line,i)=>(
+            <span key={i} style={{display:"block"}}>{renderInlineMarkdown(line)}</span>
+          ))}
+        </div>
+      );
+      case "note": return (
+        <div className="help-note" {...edAttr}
+          onBlur={editMode ? e=>updateField(si,"content",e.target.innerText) : undefined}
+        >
+          {editMode ? sec.content : sec.content.split("\n").map((line,i)=>(
+            <span key={i} style={{display:"block"}}>{renderInlineMarkdown(line)}</span>
+          ))}
+        </div>
+      );
+      case "formula": return (
+        <div className="help-formula" {...edAttr}
+          onBlur={editMode ? e=>updateField(si,"content",e.target.innerText) : undefined}
+        >
+          {sec.content.split("\n").map((line,i)=><div key={i}>{line}</div>)}
+        </div>
+      );
+      case "table": return (
+        <div style={{overflowX:"auto"}}>
+          <table className="help-table">
+            <thead><tr>{sec.headers.map((h,ci)=>(
+              <th key={ci} {...edAttr} onBlur={editMode?e=>updateHeader(si,ci,e.target.innerText):undefined}>{h}</th>
+            ))}</tr></thead>
+            <tbody>{sec.rows.map((row,ri)=>(
+              <tr key={ri}>{row.map((cell,ci)=>(
+                <td key={ci} {...edAttr} onBlur={editMode?e=>updateCell(si,ri,ci,e.target.innerText):undefined}>
+                  {editMode ? cell : renderInlineMarkdown(cell)}
+                </td>
+              ))}</tr>
+            ))}</tbody>
+          </table>
+        </div>
+      );
+      default: return null;
+    }
+  };
+
+  return (
+    <div className="modal-backdrop" onClick={handleBackdrop}>
+      <div className="modal" onClick={e=>e.stopPropagation()}>
+        <div className="modal-header">
+          <div className="modal-title">📖 {content.title}</div>
+          <div className="modal-header-actions">
+            {!editMode
+              ? <button className="mbtn mbtn-outline" style={{background:"rgba(255,255,255,.12)",borderColor:"rgba(255,255,255,.3)",color:"#fff"}} onClick={()=>setEditMode(true)}>✏️ 편집</button>
+              : <button className="mbtn mbtn-edit-on" onClick={()=>setEditMode(false)}>👁 미리보기</button>
+            }
+            <button className="modal-close" onClick={onClose}>✕</button>
+          </div>
+        </div>
+
+        {editMode && (
+          <div className="edit-banner">
+            ✏️ 편집 모드 — 텍스트와 표 셀을 직접 클릭하여 수정하세요.
+          </div>
+        )}
+
+        <div className="modal-body">
+          {content.sections.map((sec, si) => (
+            <div className="help-section" key={sec.id}>
+              <div className="help-section-title"
+                {...(editMode?{contentEditable:true,suppressContentEditableWarning:true}:{})}
+                onBlur={editMode?e=>updateField(si,"title",e.target.innerText):undefined}
+              >{sec.title}</div>
+              {renderSection(sec, si)}
+            </div>
+          ))}
+        </div>
+
+        {editMode && (
+          <div className="modal-footer">
+            <button className="mbtn mbtn-warn" onClick={handleReset}>↩ 초기화</button>
+            <div style={{display:"flex",gap:"10px",alignItems:"center"}}>
+              {downloadDone && <span style={{fontSize:"13px",color:"#059669",fontWeight:600}}>✅ 다운로드 완료!</span>}
+              <button className="mbtn mbtn-navy" onClick={handleDownload}>💾 저장 후 다운로드 (index.html)</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   App
+   ============================================================ */
+function App() {
+  const [catIndex, setCatIndex] = useState(0);
+  const [fromIndex, setFromIndex] = useState(0);
+  const [inputVal, setInputVal] = useState("1");
+  const [sig, setSig] = useState(6);
+  const [notation, setNotation] = useState("auto");
+  const [showHelp, setShowHelp] = useState(false);
+
+  const cat  = CATEGORIES[catIndex];
+  const from = cat.units[fromIndex];
+
+  const parsedVal = (() => {
+    const raw = inputVal.replace(/,/g,"").trim();
+    if(raw===""||raw==="-"||raw===".") return null;
+    const n = Number(raw);
+    return Number.isNaN(n) ? null : n;
+  })();
+
+  const handleCatChange = (i) => { setCatIndex(i); setFromIndex(0); };
+
+  const handleRowClick = (i, out) => {
+    if(out===null) return;
+    copyText(String(out));
+    showToast(`${fmt(out,sig,notation)} ${cat.units[i].sym} 복사됨`);
+    setFromIndex(i);
+    const nv = (Math.abs(out)>=1e7||(Math.abs(out)<1e-4&&out!==0))
+      ? out.toExponential(sig-1) : String(parseFloat(out.toPrecision(sig)));
+    setInputVal(nv);
+  };
+
+  const handleReset = () => {
+    setCatIndex(0); setFromIndex(0); setInputVal("1"); setSig(6); setNotation("auto");
+  };
+
+  return (
+    <div className="app">
+      {/* HEADER */}
+      <header className="topbar">
+        <div className="brand">
+          <div className="logo">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 8h13M4 8l3-3M4 8l3 3"/><path d="M20 16H7M20 16l-3-3M20 16l-3 3"/>
+            </svg>
+          </div>
+          <div className="brand-text">
+            <div className="title">단위 변환 Tool</div>
+            <div className="sub">Units Conversion · 공학용 단위 환산</div>
+          </div>
+        </div>
+        <div className="topbar-right">
+          <button className="hdr-btn hdr-btn-outline" onClick={handleReset}>
+            Reset · 예제값
+          </button>
+          <button className="hdr-btn hdr-btn-solid" onClick={() => setShowHelp(true)}>
+            도움말
+          </button>
+        </div>
+      </header>
+
+      {/* BODY */}
+      <div className="body">
+        {/* Sidebar */}
+        <aside className="sidebar">
+          {/* 01 카테고리 */}
+          <div className="sec-card">
+            <div className="sec-header">
+              <div className="sec-num">01</div>
+              <div className="sec-title">변환 카테고리 <span className="sec-sub">Category</span></div>
+            </div>
+            <div className="sec-body" style={{padding:"10px"}}>
+              <div className="cat-grid">
+                {CATEGORIES.map((c,i) => (
+                  <button key={c.id}
+                    className={"chip" + (i===catIndex?" active":"")}
+                    onClick={()=>handleCatChange(i)}
+                  >
+                    {c.ko}<span className="en">{c.en}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* 02 입력값 */}
+          <div className="sec-card">
+            <div className="sec-header">
+              <div className="sec-num">02</div>
+              <div className="sec-title">입력값 <span className="sec-sub">Input Value</span></div>
+            </div>
+            <div className="sec-body">
+              <div className="field">
+                <label>값 <span className="lbl-en">(Value)</span></label>
+                <input type="text" value={inputVal}
+                  onChange={e=>setInputVal(e.target.value)}
+                  inputMode="decimal" autoComplete="off" spellCheck="false" />
+              </div>
+              <div className="field">
+                <label>기준 단위 <span className="lbl-en">(From)</span></label>
+                <select value={fromIndex} onChange={e=>setFromIndex(Number(e.target.value))}>
+                  {cat.units.map((u,i)=>(
+                    <option key={i} value={i}>{u.sym}{u.nm?`  (${u.nm})`:""}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* 03 표시 옵션 */}
+          <div className="sec-card">
+            <div className="sec-header">
+              <div className="sec-num">03</div>
+              <div className="sec-title">표시 옵션 <span className="sec-sub">Display</span></div>
+            </div>
+            <div className="sec-body">
+              <div className="two">
+                <div className="field" style={{marginBottom:0}}>
+                  <label>유효숫자</label>
+                  <select value={sig} onChange={e=>setSig(Number(e.target.value))}>
+                    {[3,4,5,6,8,10].map(n=><option key={n} value={n}>{n}</option>)}
+                  </select>
+                </div>
+                <div className="field" style={{marginBottom:0}}>
+                  <label>표기법</label>
+                  <select value={notation} onChange={e=>setNotation(e.target.value)}>
+                    <option value="auto">자동</option>
+                    <option value="sci">지수 (과학)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button className="reset-btn" onClick={handleReset}>↺ 초기화</button>
+
+          <div className="ref">
+            <b>Reference</b>
+            (1) SI / ISO 80000 단위계<br/>
+            (2) ASME · API 표준 환산 계수<br/>
+            칼로리=IT(4.1868 J), BTU=IT, hp=기계마력
+          </div>
+        </aside>
+
+        {/* Main */}
+        <main className="main">
+          <div className="result-head">
+            <div className="cat-label">선택된 물리량</div>
+            <div className="cat-name">
+              {cat.ko} <span className="en">{cat.en}</span>
+            </div>
+            <div className="expr">
+              {parsedVal===null
+                ? <span style={{color:"var(--muted2)",fontSize:"16px",fontWeight:400}}>값을 입력하세요</span>
+                : <>{fmt(parsedVal,sig,notation)} <span className="from-u">{from.sym}</span><span className="eq">=</span></>
+              }
+            </div>
+            <div className="hint">결과 카드를 클릭하면 값이 복사되고, 그 단위가 기준 단위로 전환됩니다.</div>
+          </div>
+
+          <div className="result-list">
+            {cat.units.map((u,i)=>{
+              const out = parsedVal===null ? null : convert(parsedVal,cat,fromIndex,i);
+              return (
+                <div key={u.sym}
+                  className={"row"+(i===fromIndex?" active":"")}
+                  onClick={()=>handleRowClick(i,out)}
+                >
+                  <div className="left">
+                    <div className="sym">{u.sym}</div>
+                    {u.nm && <div className="nm">{u.nm}</div>}
+                  </div>
+                  <div className="right">
+                    <div className="val">{out===null?"—":fmt(out,sig,notation)}</div>
+                    <div className="copy">{i===fromIndex?"기준 단위":"클릭하여 복사 · 기준 전환"}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </main>
+      </div>
+
+      {showHelp && <HelpModal onClose={()=>setShowHelp(false)} />}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+# GitHub Pages 기본 설정
+title: "단위 변환 Tool"
+description: "공학용 단위 환산 도구 — 15개 물리량 카테고리, SI/ASME/API 표준 기반"
+lang: ko
+
+# 빌드 설정
+theme: null          # 테마 없음 (index.html 직접 사용)
+exclude:
+  - "*.md"
+  - "_config.yml"
+
+# SEO
+url: ""              # 배포 후 https://{user}.github.io/{repo} 로 교체하세요
