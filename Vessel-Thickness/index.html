@@ -1,0 +1,1984 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vessel Thickness</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; font-family: -apple-system, 'Segoe UI', 'Malgun Gothic', sans-serif; font-size: 13px; background: #eef1f8; color: #1e293b; overflow: hidden; }
+
+/* ── HEADER ── */
+.hdr {
+  height: 54px; flex-shrink: 0;
+  background: linear-gradient(135deg, #0d1f4e 0%, #1a3580 55%, #2054c8 100%);
+  display: flex; align-items: center; justify-content: space-between; padding: 0 20px;
+}
+.hdr-title   { color: #fff; font-size: 16px; font-weight: 700; letter-spacing: .3px; }
+.hdr-sub     { color: #93b8f8; font-size: 10.5px; margin-top: 2px; }
+.hdr-badge   { background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3); border-radius: 12px; color: #fff; font-size: 11.5px; font-weight: 600; padding: 3px 13px; white-space: nowrap; }
+
+/* ── ROOT LAYOUT ── */
+.root { display: flex; height: calc(100vh - 54px); overflow: hidden; }
+
+/* ── LEFT PANEL ── */
+.left {
+  min-width: 320px; max-width: 760px; flex-shrink: 0;
+  display: flex; flex-direction: column;
+  background: #eef1f8; overflow: hidden;
+}
+.left-scroll {
+  flex: 1; overflow-y: auto; padding: 8px 8px 10px 10px;
+  display: flex; flex-direction: column; gap: 5px;
+}
+.left-scroll::-webkit-scrollbar { width: 4px; }
+.left-scroll::-webkit-scrollbar-thumb { background: #b8c8e8; border-radius: 2px; }
+.left-foot {
+  padding: 8px 10px 10px; background: #eef1f8;
+  border-top: 1px solid #d8dff0;
+  display: flex; flex-direction: column; gap: 4px;
+}
+
+/* ── SECTION CARD ── */
+.card { background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(13,31,78,.07); overflow: hidden; }
+.card-hdr { display: flex; align-items: center; gap: 7px; padding: 6px 10px 5px; border-bottom: 1px solid #f0f3fb; }
+.badge { width: 18px; height: 18px; border-radius: 50%; background: #0d1f4e; color: #fff; font-size: 9.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.card-title { font-size: 11px; font-weight: 700; color: #1a40b0; letter-spacing: .1px; }
+.card-body { padding: 5px 10px 7px; display: flex; flex-direction: column; gap: 3px; }
+
+/* ── FORM ROW ── */
+.fr { display: flex; align-items: center; gap: 5px; min-height: 24px; }
+.fl { flex: 1; font-size: 11.5px; font-weight: 600; color: #1e3a6e; white-space: nowrap; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.fi {
+  border: 1px solid #cdd5eb; border-radius: 5px;
+  padding: 2px 6px; font-size: 11px; background: #fff; color: #111;
+  outline: none; transition: border-color .15s, box-shadow .15s;
+  width: 92px; flex-shrink: 0;
+}
+.fi:focus { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37,99,235,.15); }
+.fi-wide { width: 155px; }
+.fi-full { width: 100%; }
+select.fi { cursor: pointer; }
+.fu { font-size: 10.5px; color: #94a3b8; width: 40px; flex-shrink: 0; }
+
+/* ── 2-COLUMN FORM GRID ── */
+.fg2 { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; }
+.fg2-item { display: flex; flex-direction: column; gap: 1px; }
+.fg2-row { display: flex; align-items: center; gap: 4px; }
+.fl2 { font-size: 10.5px; font-weight: 600; color: #1e3a6e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fi-s { width: 72px; flex-shrink: 0; }
+.fi-auto { background: #eff4ff; border-color: #c3d4f8; font-weight: 700; color: #0d1f4e; }
+
+/* subtext */
+.sub-txt { font-size: 9.5px; color: #94a3b8; margin-top: -2px; padding-left: 1px; }
+.warn-txt { font-size: 10px; color: #e05c00; margin-top: -1px; }
+
+/* divider within card */
+.cdiv { border: none; border-top: 1px dashed #e8edf8; margin: 1px 0; }
+
+/* ── CALC BUTTON ── */
+.btn-calc {
+  background: linear-gradient(135deg, #1a3580, #2563eb);
+  color: #fff; border: none; border-radius: 8px; cursor: pointer;
+  font-size: 13px; font-weight: 700; padding: 7px 0; width: 100%;
+  box-shadow: 0 2px 10px rgba(37,99,235,.35);
+  letter-spacing: .3px; transition: opacity .15s, transform .1s;
+}
+.btn-calc:hover { opacity: .92; transform: translateY(-1px); }
+.btn-calc:active { transform: translateY(0); }
+
+/* ── RIGHT PANEL ── */
+.right { flex: 1; overflow-y: auto; padding: 12px 14px 16px 10px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.right::-webkit-scrollbar { width: 4px; }
+.right::-webkit-scrollbar-thumb { background: #b8c8e8; border-radius: 2px; }
+
+/* top result card */
+.res-head-card {
+  background: #fff; border-radius: 10px; box-shadow: 0 1px 5px rgba(13,31,78,.07);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 11px 16px; gap: 12px; flex-shrink: 0;
+}
+.res-head-info { flex-shrink: 0; }
+.res-title { font-size: 15px; font-weight: 700; color: #0d1f4e; }
+.res-sub   { font-size: 11px; color: #64748b; margin-top: 2px; }
+
+/* diagram card */
+.diag-card {
+  background: #fff; border-radius: 10px; box-shadow: 0 1px 5px rgba(13,31,78,.07);
+  padding: 10px 16px 12px; flex-shrink: 0;
+}
+.diag-card-hdr {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 8px; padding-bottom: 7px; border-bottom: 1px solid #f0f3fb;
+}
+.diag-card-title { font-size: 11.5px; font-weight: 700; color: #1a40b0; }
+.diag-card-sub   { font-size: 10.5px; color: #94a3b8; margin-left: auto; }
+
+/* empty state */
+.empty { background: #fff; border-radius: 10px; box-shadow: 0 1px 5px rgba(13,31,78,.07); flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 50px 20px; gap: 10px; color: #94a3b8; text-align: center; }
+.empty-icon { font-size: 44px; opacity: .3; }
+.empty-txt  { font-size: 13px; font-weight: 500; line-height: 1.7; }
+
+/* alert banners */
+.alert { border-radius: 8px; padding: 8px 13px; font-size: 12px; display: flex; align-items: flex-start; gap: 7px; line-height: 1.5; }
+.alert-ok   { background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d; }
+.alert-warn { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
+.alert-err  { background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; }
+
+/* ── RESULT TABLES ── */
+.rtbl { background: #fff; border-radius: 10px; box-shadow: 0 1px 5px rgba(13,31,78,.07); overflow: hidden; }
+.rtbl-hdr-row {
+  display: grid; background: #0d1f4e; color: #fff;
+}
+.th { padding: 9px 10px; font-size: 11px; font-weight: 700; text-align: center; border-right: 1px solid rgba(255,255,255,.1); line-height: 1.35; }
+.th:last-child { border-right: none; }
+.th-sub { font-size: 9.5px; color: #93b8f8; font-weight: 400; }
+.th.lft { text-align: left; }
+.dr { display: grid; border-bottom: 1px solid #f0f3fb; }
+.dr:last-child { border-bottom: none; }
+.dr:hover { background: #f8faff; }
+.td { padding: 7px 10px; font-size: 12px; text-align: center; border-right: 1px solid #f0f3fb; display: flex; align-items: center; justify-content: center; }
+.td:last-child { border-right: none; }
+.td.lft { justify-content: flex-start; font-weight: 600; color: #334155; font-size: 11.5px; }
+.v    { font-weight: 700; color: #0d1f4e; }
+.v-ok { font-weight: 700; color: #16a34a; }
+.v-ng { font-weight: 700; color: #dc2626; }
+.v-dim { font-size: 11px; color: #94a3b8; }
+
+/* result grid 2-col */
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* formula ref bar */
+.ref-bar { background: rgba(255,255,255,.65); border-radius: 8px; padding: 7px 13px; font-size: 10px; color: #94a3b8; line-height: 1.7; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 960px) {
+  .root { flex-direction: column; overflow-y: auto; height: auto; }
+  .left { width: 100%; min-width: 0; height: auto; }
+  .left-scroll { overflow-y: visible; max-height: none; }
+  .right { padding: 0 12px 20px; }
+  .grid2 { grid-template-columns: 1fr; }
+  html, body { overflow: auto; }
+}
+@media (max-width: 640px) {
+  .rtbl-hdr-row, .dr { grid-template-columns: 1fr !important; }
+  .th, .td { border-right: none; border-bottom: 1px solid rgba(255,255,255,.1); }
+}
+
+/* ── HELP BUTTON ── */
+.btn-help {
+  background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.35);
+  border-radius: 12px; color: #fff; font-size: 11.5px; font-weight: 600;
+  padding: 4px 14px; cursor: pointer; white-space: nowrap;
+  transition: background .15s;
+}
+.btn-help:hover { background: rgba(255,255,255,.28); }
+
+/* ── HELP MODAL ── */
+.modal-backdrop {
+  position: fixed; inset: 0; background: rgba(10,20,50,.52);
+  z-index: 9999; display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+}
+.modal-box {
+  background: #fff; border-radius: 14px;
+  box-shadow: 0 8px 40px rgba(10,20,60,.25);
+  width: 100%; max-width: 780px; max-height: 88vh;
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 22px 14px;
+  background: linear-gradient(135deg,#0d1f4e,#2054c8);
+  flex-shrink: 0;
+}
+.modal-header-title { color:#fff; font-size:15px; font-weight:700; }
+.modal-header-sub   { color:#93b8f8; font-size:10px; margin-top:2px; }
+.modal-close {
+  background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.35);
+  border-radius: 8px; color:#fff; font-size:13px; font-weight:700;
+  padding: 3px 11px; cursor:pointer; transition: background .15s;
+}
+.modal-close:hover { background: rgba(255,255,255,.32); }
+.modal-body {
+  overflow-y: auto; padding: 20px 24px 24px;
+  display: flex; flex-direction: column; gap: 18px;
+}
+.modal-body::-webkit-scrollbar { width: 4px; }
+.modal-body::-webkit-scrollbar-thumb { background:#b8c8e8; border-radius:2px; }
+.help-section { display: flex; flex-direction: column; gap: 7px; }
+.help-section-title {
+  font-size: 12px; font-weight: 700; color: #0d1f4e;
+  padding-bottom: 5px; border-bottom: 2px solid #e8edf8;
+  display: flex; align-items: center; gap: 6px;
+}
+.hs-num {
+  background: #1a3580; color:#fff; border-radius:50%;
+  width:18px; height:18px; font-size:9.5px;
+  display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.help-table { width:100%; border-collapse:collapse; font-size:11.5px; }
+.help-table th {
+  background:#f0f4fb; color:#1a3580; font-weight:700;
+  padding:5px 10px; text-align:left; border:1px solid #e2e8f4;
+}
+.help-table td { padding:5px 10px; border:1px solid #e8edf6; vertical-align:top; color:#334155; }
+.help-table tr:nth-child(even) td { background:#f8faff; }
+.help-note {
+  background:#fffbeb; border:1px solid #fcd34d; border-radius:7px;
+  padding:9px 13px; font-size:11px; color:#78350f; line-height:1.6;
+}
+.help-formula {
+  background:#f0f4fb; border-left:3px solid #2563eb; border-radius:0 6px 6px 0;
+  padding:8px 13px; font-size:11px; color:#1e293b; font-family:monospace; line-height:1.8;
+}
+.help-p { font-size:11.5px; color:#334155; line-height:1.7; }
+
+/* ── HELP EDIT MODE ── */
+.btn-edit {
+  background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.35);
+  border-radius: 8px; color:#fff; font-size:11px; font-weight:600;
+  padding: 3px 11px; cursor:pointer; transition: background .15s; white-space:nowrap;
+}
+.btn-edit:hover { background: rgba(255,255,255,.28); }
+.btn-edit-active {
+  background: #f59e0b; border-color: #d97706; color:#fff;
+}
+.btn-edit-active:hover { background: #d97706; }
+.btn-save {
+  background: #16a34a; border: none; border-radius: 8px;
+  color:#fff; font-size:11px; font-weight:700;
+  padding: 3px 13px; cursor:pointer; transition: background .15s;
+}
+.btn-save:hover { background: #15803d; }
+.btn-reset {
+  background: none; border: 1px solid #e2e8f4; border-radius: 8px;
+  color:#64748b; font-size:11px; font-weight:600;
+  padding: 3px 11px; cursor:pointer; transition: background .15s;
+}
+.btn-reset:hover { background: #f1f5f9; }
+.edit-bar {
+  display:flex; align-items:center; gap:8px;
+  padding:8px 14px; background:#fffbeb;
+  border-bottom:1px solid #fcd34d; flex-shrink:0;
+  font-size:11px; color:#92400e;
+}
+.edit-bar-msg { flex:1; }
+.editable-text {
+  border: 1.5px dashed #94a3b8; border-radius:5px;
+  padding:4px 7px; min-height:28px; width:100%;
+  outline:none; font-size:11.5px; color:#334155; line-height:1.7;
+  background:#fffef5; cursor:text; white-space:pre-wrap;
+}
+.editable-text:focus { border-color:#f59e0b; background:#fffdf0; }
+.editable-cell {
+  border:1.5px dashed #94a3b8; border-radius:4px;
+  padding:2px 5px; outline:none; font-size:11.5px;
+  color:#334155; background:#fffef5; min-width:30px;
+  cursor:text; white-space:pre-wrap;
+}
+.editable-cell:focus { border-color:#f59e0b; background:#fffdf0; }
+.download-bar {
+  display:flex; align-items:center; gap:8px;
+  padding:10px 14px; background:#f0fdf4;
+  border-top:1px solid #bbf7d0; flex-shrink:0;
+}
+.btn-download {
+  background: #1a3580; border:none; border-radius:8px;
+  color:#fff; font-size:12px; font-weight:700;
+  padding:5px 16px; cursor:pointer; transition:background .15s;
+}
+.btn-download:hover { background: #2054c8; }
+.dl-msg { font-size:11px; color:#166534; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useRef, useEffect } = React;
+
+
+// ════════════════════════════════════════════════════════════════════
+// ██  도움말 내용 (HELP_CONTENT)  ██
+// ────────────────────────────────────────────────────────────────────
+//  이 블록만 수정하면 도움말이 바뀝니다. 코드 영역은 건드리지 마세요.
+//
+//  섹션 타입:
+//    type: 'text'    → 단락 텍스트 (text: "...")
+//    type: 'note'    → 노란 박스 안내 (text: "...")
+//    type: 'formula' → 고정폭 수식 박스 (text: "...")
+//    type: 'table'   → 표 (headers: [...], rows: [[...], ...])
+//
+//  ※ 텍스트 안에서 **굵게** 표시는 **텍스트** 형식으로 작성하세요.
+// ════════════════════════════════════════════════════════════════════
+const HELP_CONTENT = {
+  title:    '도움말 — Vessel Thickness v2.6',
+  subtitle: 'ASME Sec.VIII Div.1 압력용기 두께 계산 웹앱 사용 가이드',
+  sections: [
+
+    // ── 섹션 1 ─────────────────────────────────────────────────────
+    {
+      title: '앱 개요',
+      blocks: [
+        {
+          type: 'text',
+          text: '이 앱은 **ASME Sec.VIII Div.1** 기반의 압력용기(Pressure Vessel) 두께 계산 도구입니다. Shell 두께(UG-27), Head 두께(UG-32), MAWP, 부피, 표면적, 중량을 자동으로 산정하며, ASME BPVC 2014 Sec.II Part D Table 1A/1B의 허용응력 데이터(Ferrous 219종, Non-Ferrous 252종)를 내장하고 있습니다.',
+        },
+        {
+          type: 'note',
+          text: '⚠️ 본 앱의 계산 결과는 **예비 검토(Preliminary Study) 목적**으로만 사용하십시오. 실제 설계·시공 적용 전에는 반드시 해당 에디션의 ASME Code 원본 및 공인 엔지니어의 검토가 필요합니다.',
+        },
+      ],
+    },
+
+    // ── 섹션 2 ─────────────────────────────────────────────────────
+    {
+      title: '입력 항목 설명',
+      blocks: [
+        {
+          type: 'table',
+          headers: ['섹션', '항목', '설명'],
+          rows: [
+            ['① 재질·규격', 'Material',            'Ferrous (철계) / Non-Ferrous (비철계) 선택'],
+            ['',             'Plate Specification', 'ASME SA-/SB- 재질 규격 선택. 선택 시 허용응력 S가 자동 계산됩니다.'],
+            ['',             'Allowable Stress S',  '설계온도에서 보간된 허용응력 (kgf/cm²). User 체크박스로 직접 입력도 가능.'],
+            ['② 설계 조건',  'Orientation',         '수평(Horizontal) / 수직(Vertical) — 부피·표면적 계산 방식에 영향'],
+            ['',             'Head Type',            '2:1 Ellipsoidal / ASME F&D / Hemispherical / Flat 중 선택'],
+            ['',             'Design Pressure P',   '설계 압력 (kgf/cm²G). MPa 환산값이 하단에 표시됩니다.'],
+            ['',             'Design Temp. T',      '설계 온도 (°C). 허용응력 S 보간에 사용됩니다.'],
+            ['',             'Inner Diameter D',    '용기 내경 (mm)'],
+            ['',             'Vessel Length L',     'Shell T/T(Tangent-to-Tangent) 길이 (mm)'],
+            ['③ 자동 산정값','Corrosion Allow. CA', '부식 여유 (mm). 두께 필요값에 더해집니다.'],
+            ['',             'Joint Efficiency E',  '용접부 이음 효율. RT 검사 정도에 따라 0.70 / 0.85 / 1.00 선택.'],
+            ['④ 두께 입력',  "Shell Th'k ts",       '사용 Shell 두께 직접 입력 (mm). 빈칸이면 최솟값의 올림값 자동 적용.'],
+            ['',             "Head Th'k th (B.F.)", '사용 Head 두께 직접 입력 — Before Forming 기준 (mm). 빈칸이면 자동 적용.'],
+            ['⑤ 보온재',     'Density ρi',          '보온재 밀도 (kg/m³). 일반 미네랄울: 80~130 kg/m³'],
+            ['',             'Thickness ti',        '보온재 두께 (mm). 보온재 중량(Wi) 및 표면적 계산에 사용됩니다.'],
+          ],
+        },
+      ],
+    },
+
+    // ── 섹션 3 ─────────────────────────────────────────────────────
+    {
+      title: '계산 결과 해석',
+      blocks: [
+        {
+          type: 'table',
+          headers: ['항목', '기호', '의미'],
+          rows: [
+            ['Shell 최소 필요두께',    "ts' (mm)",        'UG-27 공식으로 산정된 Shell 최소 필요두께 (부식 여유 포함)'],
+            ['Head 최소 필요두께 B.F.', "th' (mm)",       'Head 최소 필요두께 — **Before Forming** 기준 (압연 공차 고려 전)'],
+            ['Head 최소 필요두께 A.F.', "tf' (mm)",       'Head 최소 필요두께 — **After Forming** 기준 (12.5% 압연 공차 적용 후)'],
+            ['Shell MAWP',            'Ms (kgf/cm²G)',   '사용 Shell 두께 기준 최대 허용 작동 압력. 설계압력 P 이상이어야 합니다.'],
+            ['Head MAWP',             'Mh (kgf/cm²G)',   '사용 Head 두께 기준 최대 허용 작동 압력. P 이상이어야 합니다.'],
+            ['정수압',                 'SPs (kgf/cm²G)', '액체 높이에 의한 수두 압력. P + SPs ≤ Ms 조건 확인.'],
+            ['Shell 부피',             'Vs (liter)',      'Shell 부분의 총 부피 및 액체 부피'],
+            ['Head 부피',              'Vh (liter)',      '양쪽 Head 합산 총 부피 및 액체 부피'],
+            ['표면적 — Material',      'As/Ah/At (m²)',  '평균 OD 기준 bare metal 표면적 — 도장 물량 산출용'],
+            ['표면적 — Painting',      '(m²)',           '외경(OD) 기준 표면적 — 도장 면적 산출용'],
+            ['표면적 — Insulation',    '(m²)',           '보온재 외면 기준 표면적 — 보온재 물량 산출용'],
+            ['Shell/Head 순중량',      'Ws/Wh (kg)',     'Shell과 Head의 금속 중량 (노즐·내부물 제외)'],
+            ['공운전 중량',             'We (kg)',        '용기 구조물만의 중량 (Shell + Head)'],
+            ['운전중 중량',             'Wo (kg)',        '공운전 중량 + 내용물(액체) 중량'],
+            ['보온재 중량',             'Wi (kg)',        '보온재 밀도 × 보온재 표면적 × 두께'],
+          ],
+        },
+      ],
+    },
+
+    // ── 섹션 4 ─────────────────────────────────────────────────────
+    {
+      title: '주요 계산식 (ASME Sec.VIII Div.1)',
+      blocks: [
+        {
+          type: 'formula',
+          text:
+`[Shell 두께 — UG-27(c)(1)]
+  ts_net = P × R / (S × E − 0.6 × P)
+  ts'    = ts_net + CA
+
+[Head 두께 — UG-32(b), 2:1 Ellipsoidal]
+  th_net_AF = P × D / (2 × S × E − 0.2 × P)
+  tf'  (A.F.) = th_net_AF + CA
+  th'  (B.F.) = tf' / 0.875          ← 12.5% 압연 공차(mill under-tolerance)
+
+[MAWP]
+  Shell :  Ms = S × E × (ts − CA) / (R + 0.6 × (ts − CA))
+  Head  :  Mh = 2 × S × E × th_aa / (D + 0.2 × th_aa)
+  단, th_aa = ts_used × 0.875 − CA  (A.F. net actual thickness)
+
+[정수압]
+  SPs = ρL × H / 10,000  (kg/m³ × m → kgf/cm²G)
+
+[2:1 Ellipsoidal Head 부피]
+  Vh_one = π × D³ / 24  (m³/head)`,
+        },
+      ],
+    },
+
+    // ── 섹션 5 ─────────────────────────────────────────────────────
+    {
+      title: 'B.F. / A.F. 란?',
+      blocks: [
+        {
+          type: 'text',
+          text: '**B.F. (Before Forming)**: 성형 전 평판 상태의 두께입니다. 구매 발주 두께가 이 기준이 됩니다.',
+        },
+        {
+          type: 'text',
+          text: '**A.F. (After Forming)**: 성형(프레스) 후의 실제 두께입니다. ASME에서는 성형 공정 중 최대 **12.5%** 두께가 얇아질 수 있도록 허용합니다 (mill under-tolerance).',
+        },
+        {
+          type: 'text',
+          text: '따라서 B.F. 발주 두께 = A.F. 필요 두께 ÷ 0.875 로 계산합니다.',
+        },
+      ],
+    },
+
+    // ── 섹션 6 ─────────────────────────────────────────────────────
+    {
+      title: '이음 효율 (Joint Efficiency E) 선택 기준',
+      blocks: [
+        {
+          type: 'table',
+          headers: ['E 값', '적용 조건'],
+          rows: [
+            ['**1.00**', '전체 방사선 투과 검사 (Full RT) 완료 — Category A, B 용접부'],
+            ['**0.85**', '부분 방사선 투과 검사 (Spot RT)'],
+            ['**0.70**', 'RT 미실시 (No RT)'],
+          ],
+        },
+      ],
+    },
+
+  ], // end sections
+}; // end HELP_CONTENT
+// ════════════════════════════════════════════════════════════════════
+// ── MATERIAL DB ──────────────────────────────────────────────────
+// Source: ASME BPVC 2014 Sec.II Part D Table 1A (Ferrous) & 1B (Non-Ferrous)
+// Stress unit: kgf/cm²  (converted from MPa × 10.197)
+// Temperatures: °C  |  den: density kg/m³
+const MATS = {
+  Ferrous: [
+  {spec:"SA-202 A K11742 PNo.4",den:7750,st:[{t:40,s:1509},{t:65,s:1509},{t:100,s:1509},{t:125,s:1509},{t:150,s:1509},{t:200,s:1509},{t:250,s:1509},{t:300,s:1509},{t:325,s:1509},{t:350,s:1499},{t:375,s:1387},{t:400,s:1091},{t:425,s:860},{t:450,s:592},{t:475,s:394},{t:500,s:257},{t:525,s:152},{t:550,s:60}]},
+  {spec:"SA-202 B K12542 PNo.4",den:7750,st:[{t:40,s:1713},{t:65,s:1713},{t:100,s:1713},{t:125,s:1713},{t:150,s:1713},{t:200,s:1713},{t:250,s:1713},{t:300,s:1683},{t:325,s:1632},{t:350,s:1560},{t:375,s:1458},{t:400,s:1234},{t:425,s:867},{t:450,s:587},{t:475,s:397},{t:500,s:256},{t:525,s:152},{t:550,s:60}]},
+  {spec:"SA-203 A K21703 PNo.9A",den:7750,st:[{t:40,s:1305},{t:65,s:1305},{t:100,s:1305},{t:125,s:1305},{t:150,s:1305},{t:200,s:1305},{t:250,s:1305},{t:300,s:1305},{t:325,s:1285},{t:350,s:1224},{t:375,s:1142},{t:400,s:970},{t:425,s:812},{t:450,s:661},{t:475,s:501},{t:500,s:365},{t:525,s:242},{t:550,s:113}]},
+  {spec:"SA-203 B K22103 PNo.9A",den:7750,st:[{t:40,s:1407},{t:65,s:1407},{t:100,s:1407},{t:125,s:1407},{t:150,s:1407},{t:200,s:1407},{t:250,s:1407},{t:300,s:1407},{t:325,s:1387},{t:350,s:1315},{t:375,s:1244},{t:400,s:1030},{t:425,s:855},{t:450,s:686},{t:475,s:504},{t:500,s:363},{t:525,s:242},{t:550,s:113}]},
+  {spec:"SA-203 D K31718 PNo.9B",den:7750,st:[{t:40,s:1305},{t:65,s:1305},{t:100,s:1305},{t:125,s:1305},{t:150,s:1305},{t:200,s:1305},{t:250,s:1305},{t:300,s:1305},{t:325,s:1285},{t:350,s:1224},{t:375,s:1142},{t:400,s:970},{t:425,s:812},{t:450,s:661},{t:475,s:501},{t:500,s:365},{t:525,s:242},{t:550,s:113}]},
+  {spec:"SA-203 E K32018 PNo.9B",den:7750,st:[{t:40,s:1407},{t:65,s:1407},{t:100,s:1407},{t:125,s:1407},{t:150,s:1407}]},
+  {spec:"SA-203 E K32018 PNo.9B",den:7750,st:[{t:40,s:1407},{t:65,s:1407},{t:100,s:1407},{t:125,s:1407},{t:150,s:1407},{t:200,s:1407},{t:250,s:1407},{t:300,s:1407},{t:325,s:1387},{t:350,s:1315},{t:375,s:1244},{t:400,s:1030},{t:425,s:855},{t:450,s:686},{t:475,s:504},{t:500,s:363},{t:525,s:242},{t:550,s:113}]},
+  {spec:"SA-203 F [t <= 50] PNo.9B",den:7750,st:[{t:40,s:1611},{t:65,s:1611},{t:100,s:1611},{t:125,s:1611},{t:150,s:1611},{t:200,s:1611},{t:250,s:1611},{t:300,s:1611},{t:325,s:1550},{t:350,s:1397}]},
+  {spec:"SA-203 F [t > 50] PNo.9B",den:7750,st:[{t:40,s:1509},{t:65,s:1509},{t:100,s:1509},{t:125,s:1509},{t:150,s:1509},{t:200,s:1509},{t:250,s:1509},{t:300,s:1509},{t:325,s:1489},{t:350,s:1428}]},
+  {spec:"SA-204 A K11820 PNo.3",den:7750,st:[{t:40,s:1305},{t:65,s:1305},{t:100,s:1305},{t:125,s:1305},{t:150,s:1305},{t:200,s:1305},{t:250,s:1305},{t:300,s:1305},{t:325,s:1305},{t:350,s:1305},{t:375,s:1305},{t:400,s:1305},{t:425,s:1295},{t:450,s:1264},{t:475,s:1071},{t:500,s:703},{t:525,s:436},{t:550,s:237}]},
+  {spec:"SA-204 B K12020 PNo.3",den:7750,st:[{t:40,s:1407},{t:65,s:1407},{t:100,s:1407},{t:125,s:1407},{t:150,s:1407},{t:200,s:1407},{t:250,s:1407},{t:300,s:1407},{t:325,s:1407},{t:350,s:1407},{t:375,s:1407},{t:400,s:1407},{t:425,s:1397},{t:450,s:1366},{t:475,s:1091},{t:500,s:694},{t:525,s:439},{t:550,s:236}]},
+  {spec:"SA-204 C K12320 PNo.3",den:7750,st:[{t:40,s:1509},{t:65,s:1509},{t:100,s:1509},{t:125,s:1509},{t:150,s:1509},{t:200,s:1509},{t:250,s:1509},{t:300,s:1509},{t:325,s:1509},{t:350,s:1509},{t:375,s:1509},{t:400,s:1509},{t:425,s:1509},{t:450,s:1468},{t:475,s:1111},{t:500,s:685},{t:525,s:442},{t:550,s:235}]},
+  {spec:"SA-225 C K12524 PNo.10A",den:7750,st:[{t:40,s:2111},{t:65,s:2111},{t:100,s:2111},{t:125,s:2111},{t:150,s:2111},{t:200,s:2111},{t:250,s:2111},{t:300,s:2111},{t:325,s:2111},{t:350,s:2111},{t:375,s:2111}]},
+  {spec:"SA-240 204 S20400 PNo.8",den:7810,st:[{t:40,s:1907},{t:65,s:1784},{t:100,s:1632},{t:125,s:1530},{t:150,s:1448},{t:200,s:1336},{t:250,s:1275},{t:300,s:1264},{t:325,s:1254},{t:350,s:1254},{t:375,s:1254},{t:400,s:1254},{t:425,s:1244},{t:450,s:1224},{t:475,s:1193},{t:500,s:1162}]},
+  {spec:"SA-240 204 S20400 PNo.8",den:7810,st:[{t:40,s:1907},{t:65,s:1784},{t:100,s:1632},{t:125,s:1519},{t:150,s:1428},{t:200,s:1264},{t:250,s:1173},{t:300,s:1122},{t:325,s:1101},{t:350,s:1091},{t:375,s:1091},{t:400,s:1071},{t:425,s:1060},{t:450,s:1040},{t:475,s:1015},{t:500,s:983}]},
+  {spec:"SA-240 302 S30200 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1407},{t:100,s:1397},{t:125,s:1366},{t:150,s:1326},{t:200,s:1285},{t:250,s:1244},{t:300,s:1183},{t:325,s:1162},{t:350,s:1132},{t:375,s:1111},{t:400,s:1091}]},
+  {spec:"SA-240 302 S30200 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1285},{t:100,s:1152},{t:125,s:1091},{t:150,s:1050},{t:200,s:976},{t:250,s:918},{t:300,s:873},{t:325,s:856},{t:350,s:839},{t:375,s:821},{t:400,s:808}]},
+  {spec:"SA-240 304 S30400 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1285},{t:100,s:1152},{t:125,s:1091},{t:150,s:1050},{t:200,s:976},{t:250,s:917},{t:300,s:876},{t:325,s:858},{t:350,s:838},{t:375,s:821},{t:400,s:808},{t:425,s:788},{t:450,s:775},{t:475,s:763},{t:500,s:750},{t:525,s:738},{t:550,s:722},{t:575,s:703},{t:600,s:667},{t:625,s:524},{t:650,s:425},{t:675,s:335},{t:700,s:270},{t:725,s:217},{t:750,s:175},{t:775,s:142},{t:800,s:113},{t:825,s:89}]},
+  {spec:"SA-240 304 S30400 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1407},{t:100,s:1397},{t:125,s:1366},{t:150,s:1326},{t:200,s:1285},{t:250,s:1244},{t:300,s:1183},{t:325,s:1162},{t:350,s:1132},{t:375,s:1111},{t:400,s:1091},{t:425,s:1071},{t:450,s:1050},{t:475,s:1030},{t:500,s:1013},{t:525,s:999},{t:550,s:951},{t:575,s:812},{t:600,s:667},{t:625,s:524},{t:650,s:425},{t:675,s:335},{t:700,s:270},{t:725,s:217},{t:750,s:175},{t:775,s:142},{t:800,s:113},{t:825,s:89}]},
+  {spec:"SA-240 305 S30500 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1407},{t:100,s:1397},{t:125,s:1366},{t:150,s:1326},{t:200,s:1285},{t:250,s:1244},{t:300,s:1183},{t:325,s:1162},{t:350,s:1132},{t:375,s:1111},{t:400,s:1091},{t:425,s:1071},{t:450,s:1050}]},
+  {spec:"SA-240 316 S31600 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1407},{t:100,s:1407},{t:125,s:1407},{t:150,s:1407},{t:200,s:1366},{t:250,s:1285},{t:300,s:1213},{t:325,s:1183},{t:350,s:1162},{t:375,s:1142},{t:400,s:1132},{t:425,s:1122},{t:450,s:1101},{t:475,s:1101},{t:500,s:1091},{t:525,s:1081},{t:550,s:1071},{t:575,s:1018},{t:600,s:819},{t:625,s:668},{t:650,s:514},{t:675,s:394},{t:700,s:302},{t:725,s:235},{t:750,s:180},{t:775,s:137},{t:800,s:106},{t:825,s:82}]},
+  {spec:"SA-240 316 S31600 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1305},{t:100,s:1203},{t:125,s:1142},{t:150,s:1091},{t:200,s:1012},{t:250,s:946},{t:300,s:898},{t:325,s:878},{t:350,s:858},{t:375,s:845},{t:400,s:836},{t:425,s:830},{t:450,s:822},{t:475,s:814},{t:500,s:808},{t:525,s:803},{t:550,s:793},{t:575,s:786},{t:600,s:765},{t:625,s:668},{t:650,s:514},{t:675,s:394},{t:700,s:302},{t:725,s:235},{t:750,s:180},{t:775,s:137},{t:800,s:106},{t:825,s:82}]},
+  {spec:"SA-240 317 S31700 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1407},{t:100,s:1407},{t:125,s:1407},{t:150,s:1407},{t:200,s:1366},{t:250,s:1285},{t:300,s:1213},{t:325,s:1183},{t:350,s:1162},{t:375,s:1142},{t:400,s:1132},{t:425,s:1122},{t:450,s:1101},{t:475,s:1101},{t:500,s:1091},{t:525,s:1081},{t:550,s:1071},{t:575,s:1018},{t:600,s:819},{t:625,s:668},{t:650,s:514},{t:675,s:394},{t:700,s:302},{t:725,s:235},{t:750,s:180},{t:775,s:137},{t:800,s:106},{t:825,s:82}]},
+  {spec:"SA-240 317 S31700 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1305},{t:100,s:1203},{t:125,s:1142},{t:150,s:1091},{t:200,s:1012},{t:250,s:946},{t:300,s:898},{t:325,s:878},{t:350,s:858},{t:375,s:845},{t:400,s:836},{t:425,s:830},{t:450,s:822},{t:475,s:814},{t:500,s:808},{t:525,s:803},{t:550,s:793},{t:575,s:786},{t:600,s:765},{t:625,s:668},{t:650,s:514},{t:675,s:394},{t:700,s:302},{t:725,s:235},{t:750,s:180},{t:775,s:137},{t:800,s:106},{t:825,s:82}]},
+  {spec:"SA-240 321 S32100 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1407},{t:100,s:1407},{t:125,s:1377},{t:150,s:1346},{t:200,s:1315},{t:250,s:1315},{t:300,s:1295},{t:325,s:1275},{t:350,s:1254},{t:375,s:1224},{t:400,s:1213},{t:425,s:1193},{t:450,s:1173},{t:475,s:1162},{t:500,s:1152},{t:525,s:1142},{t:550,s:965},{t:575,s:604},{t:600,s:457},{t:625,s:335},{t:650,s:250},{t:675,s:187},{t:700,s:128},{t:725,s:86},{t:750,s:63},{t:775,s:45},{t:800,s:28},{t:825,s:17}]},
+  {spec:"SA-240 321 S32100 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1326},{t:100,s:1254},{t:125,s:1203},{t:150,s:1162},{t:200,s:1081},{t:250,s:1017},{t:300,s:964},{t:325,s:941},{t:350,s:925},{t:375,s:912},{t:400,s:892},{t:425,s:886},{t:450,s:874},{t:475,s:867},{t:500,s:856},{t:525,s:846},{t:550,s:791},{t:575,s:604},{t:600,s:457},{t:625,s:335},{t:650,s:250},{t:675,s:187},{t:700,s:128},{t:725,s:86},{t:750,s:63},{t:775,s:45},{t:800,s:28},{t:825,s:17}]},
+  {spec:"SA-240 321 S32100 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1407},{t:100,s:1407},{t:125,s:1377},{t:150,s:1346},{t:200,s:1315},{t:250,s:1315},{t:300,s:1295},{t:325,s:1275},{t:350,s:1254},{t:375,s:1234},{t:400,s:1213},{t:425,s:1193},{t:450,s:1173},{t:475,s:1162},{t:500,s:1152},{t:525,s:1132},{t:550,s:891},{t:575,s:586},{t:600,s:453},{t:625,s:335},{t:650,s:250},{t:675,s:187},{t:700,s:128},{t:725,s:86},{t:750,s:63},{t:775,s:45},{t:800,s:28},{t:825,s:17}]},
+  {spec:"SA-240 329 S32900 PNo.10H",den:8030,st:[{t:40,s:1805},{t:65,s:1805},{t:100,s:1805},{t:125,s:1774},{t:150,s:1744},{t:200,s:1713},{t:250,s:1713}]},
+  {spec:"SA-240 347 S34700 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1407},{t:100,s:1397},{t:125,s:1366},{t:150,s:1315},{t:200,s:1254},{t:250,s:1213},{t:300,s:1193},{t:325,s:1183},{t:350,s:1183},{t:375,s:1183},{t:400,s:1183},{t:425,s:1183},{t:450,s:1183},{t:475,s:1173},{t:500,s:1173},{t:525,s:1152},{t:550,s:1018},{t:575,s:787},{t:600,s:588},{t:625,s:407},{t:650,s:306},{t:675,s:237},{t:700,s:166},{t:725,s:114},{t:750,s:91},{t:775,s:72},{t:800,s:59},{t:825,s:54}]},
+  {spec:"SA-240 347 S34700 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1346},{t:100,s:1285},{t:125,s:1244},{t:150,s:1203},{t:200,s:1132},{t:250,s:1071},{t:300,s:1018},{t:325,s:998},{t:350,s:980},{t:375,s:969},{t:400,s:963},{t:425,s:956},{t:450,s:950},{t:475,s:943},{t:500,s:941},{t:525,s:942},{t:550,s:921},{t:575,s:787},{t:600,s:588},{t:625,s:407},{t:650,s:306},{t:675,s:237},{t:700,s:166},{t:725,s:114},{t:750,s:91},{t:775,s:72},{t:800,s:59},{t:825,s:54}]},
+  {spec:"SA-240 348 S34800 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1407},{t:100,s:1397},{t:125,s:1366},{t:150,s:1315},{t:200,s:1254},{t:250,s:1213},{t:300,s:1193},{t:325,s:1183},{t:350,s:1183},{t:375,s:1183},{t:400,s:1183},{t:425,s:1183},{t:450,s:1183},{t:475,s:1173},{t:500,s:1173},{t:525,s:1152},{t:550,s:1018},{t:575,s:787},{t:600,s:588},{t:625,s:407},{t:650,s:306},{t:675,s:237},{t:700,s:166},{t:725,s:114},{t:750,s:91},{t:775,s:72},{t:800,s:59},{t:825,s:54}]},
+  {spec:"SA-240 348 S34800 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1346},{t:100,s:1285},{t:125,s:1244},{t:150,s:1203},{t:200,s:1132},{t:250,s:1071},{t:300,s:1018},{t:325,s:998},{t:350,s:980},{t:375,s:969},{t:400,s:963},{t:425,s:956},{t:450,s:950},{t:475,s:943},{t:500,s:941},{t:525,s:942},{t:550,s:921},{t:575,s:787},{t:600,s:588},{t:625,s:407},{t:650,s:306},{t:675,s:237},{t:700,s:166},{t:725,s:114},{t:750,s:91},{t:775,s:72},{t:800,s:59},{t:825,s:54}]},
+  {spec:"SA-240 405 S40500 PNo.7",den:7750,st:[{t:40,s:1173},{t:65,s:1122},{t:100,s:1071},{t:125,s:1050},{t:150,s:1040},{t:200,s:1020},{t:250,s:1008},{t:300,s:991},{t:325,s:980},{t:350,s:966},{t:375,s:945},{t:400,s:920},{t:425,s:888},{t:450,s:851},{t:475,s:808},{t:500,s:686},{t:525,s:427},{t:550,s:144}]},
+  {spec:"SA-240 405 S40500 PNo.7",den:7750,st:[{t:40,s:1173},{t:65,s:1122},{t:100,s:1071},{t:125,s:1050},{t:150,s:1040},{t:200,s:1020},{t:250,s:1008},{t:300,s:991},{t:325,s:980},{t:350,s:966},{t:375,s:945}]},
+  {spec:"SA-240 410 S41000 PNo.6",den:7750,st:[{t:40,s:1305},{t:65,s:1305},{t:100,s:1285},{t:125,s:1275},{t:150,s:1254},{t:200,s:1224},{t:250,s:1213},{t:300,s:1193},{t:325,s:1173},{t:350,s:1162},{t:375,s:1132},{t:400,s:1101},{t:425,s:1060},{t:450,s:1020},{t:475,s:917},{t:500,s:706},{t:525,s:519},{t:550,s:385},{t:575,s:269},{t:600,s:184},{t:625,s:118},{t:650,s:68}]},
+  {spec:"SA-240 429 S42900 PNo.6",den:7750,st:[{t:40,s:1305},{t:65,s:1305},{t:100,s:1285},{t:125,s:1275},{t:150,s:1254},{t:200,s:1224},{t:250,s:1213},{t:300,s:1193},{t:325,s:1173},{t:350,s:1162},{t:375,s:1132},{t:400,s:1101},{t:425,s:1060},{t:450,s:1030},{t:475,s:895},{t:500,s:718},{t:525,s:540},{t:550,s:389},{t:575,s:280},{t:600,s:209},{t:625,s:162},{t:650,s:124}]},
+  {spec:"SA-240 430 S43000 PNo.7",den:7750,st:[{t:40,s:1305},{t:65,s:1305},{t:100,s:1285},{t:125,s:1275},{t:150,s:1254},{t:200,s:1224},{t:250,s:1213},{t:300,s:1193},{t:325,s:1173},{t:350,s:1162},{t:375,s:1132},{t:400,s:1101},{t:425,s:1060},{t:450,s:1030},{t:475,s:895},{t:500,s:718},{t:525,s:540},{t:550,s:389},{t:575,s:280},{t:600,s:209},{t:625,s:162},{t:650,s:124}]},
+  {spec:"SA-240 S40910 PNo.7",den:7750,st:[{t:40,s:1101},{t:65,s:1060},{t:100,s:1007},{t:125,s:963},{t:150,s:919},{t:200,s:855},{t:250,s:821},{t:300,s:797},{t:325,s:794},{t:350,s:794},{t:375,s:794},{t:400,s:787},{t:425,s:781},{t:450,s:775}]},
+  {spec:"SA-240 S40920 PNo.7",den:7750,st:[{t:40,s:1101},{t:65,s:1060},{t:100,s:1007},{t:125,s:963},{t:150,s:919},{t:200,s:855},{t:250,s:821},{t:300,s:797},{t:325,s:794},{t:350,s:794},{t:375,s:794},{t:400,s:787},{t:425,s:781},{t:450,s:775}]},
+  {spec:"SA-240 S40930 PNo.7",den:7750,st:[{t:40,s:1101},{t:65,s:1060},{t:100,s:1007},{t:125,s:963},{t:150,s:919},{t:200,s:855},{t:250,s:821},{t:300,s:797},{t:325,s:794},{t:350,s:794},{t:375,s:794},{t:400,s:787},{t:425,s:781},{t:450,s:775}]},
+  {spec:"SA-240 S44400 PNo.7",den:7750,st:[{t:40,s:1203},{t:65,s:1203},{t:100,s:1203},{t:125,s:1183},{t:150,s:1162},{t:200,s:1142},{t:250,s:1122},{t:300,s:1091},{t:325,s:1071},{t:350,s:1060}]},
+  {spec:"SA-240 S32950 PNo.10H",den:8030,st:[{t:40,s:2009},{t:65,s:2009},{t:100,s:1999},{t:125,s:1948},{t:150,s:1897},{t:200,s:1856},{t:250,s:1856},{t:300,s:1856},{t:325,s:1856}]},
+  {spec:"SA-240 S44700 PNo.10J",den:7750,st:[{t:40,s:1611},{t:65,s:1611},{t:100,s:1601},{t:125,s:1581},{t:150,s:1550},{t:200,s:1540},{t:250,s:1540},{t:300,s:1540},{t:325,s:1540}]},
+  {spec:"SA-240 S44800 PNo.10K",den:7750,st:[{t:40,s:1611},{t:65,s:1591},{t:100,s:1570},{t:125,s:1560},{t:150,s:1550},{t:200,s:1540},{t:250,s:1519},{t:300,s:1499},{t:325,s:1499}]},
+  {spec:"SA-240 S31725 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1407},{t:100,s:1407},{t:125,s:1397},{t:150,s:1377},{t:200,s:1336}]},
+  {spec:"SA-240 S31725 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1295},{t:100,s:1173},{t:125,s:1111},{t:150,s:1071},{t:200,s:991}]},
+  {spec:"SA-240 S30815 PNo.8",den:8030,st:[{t:40,s:1754},{t:65,s:1744},{t:100,s:1733},{t:125,s:1683},{t:150,s:1632},{t:200,s:1581},{t:250,s:1540},{t:300,s:1509},{t:325,s:1499},{t:350,s:1489},{t:375,s:1479},{t:400,s:1458},{t:425,s:1448},{t:450,s:1428},{t:475,s:1407},{t:500,s:1387},{t:525,s:1193},{t:550,s:952},{t:575,s:750},{t:600,s:596},{t:625,s:467},{t:650,s:362},{t:675,s:286},{t:700,s:227},{t:725,s:180},{t:750,s:145},{t:775,s:121},{t:800,s:104},{t:825,s:84},{t:850,s:67},{t:875,s:59},{t:900,s:49}]},
+  {spec:"SA-240 S30815 PNo.8",den:8030,st:[{t:40,s:1754},{t:65,s:1744},{t:100,s:1723},{t:125,s:1642},{t:150,s:1540},{t:200,s:1407},{t:250,s:1315},{t:300,s:1254},{t:325,s:1234},{t:350,s:1224},{t:375,s:1203},{t:400,s:1193},{t:425,s:1183},{t:450,s:1173},{t:475,s:1152},{t:500,s:1142},{t:525,s:1111},{t:550,s:952},{t:575,s:750},{t:600,s:596},{t:625,s:467},{t:650,s:362},{t:675,s:286},{t:700,s:227},{t:725,s:180},{t:750,s:145},{t:775,s:121},{t:800,s:104},{t:825,s:84},{t:850,s:67},{t:875,s:59},{t:900,s:49}]},
+  {spec:"SA-240 S31803 PNo.10H",den:7800,st:[{t:40,s:1805},{t:65,s:1805},{t:100,s:1805},{t:125,s:1774},{t:150,s:1744},{t:200,s:1683},{t:250,s:1642},{t:300,s:1632},{t:325,s:1621}]},
+  {spec:"SA-240 S32304 PNo.10H",den:7800,st:[{t:40,s:1754},{t:65,s:1723},{t:100,s:1672},{t:125,s:1621},{t:150,s:1581},{t:200,s:1530},{t:250,s:1499},{t:300,s:1479},{t:325,s:1468}]},
+  {spec:"SA-240 S44635 PNo.10I",den:7750,st:[{t:40,s:1805},{t:65,s:1784},{t:100,s:1744},{t:125,s:1693},{t:150,s:1652},{t:200,s:1591},{t:250,s:1550}]},
+  {spec:"SA-240 S32550 PNo.10H",den:7800,st:[{t:40,s:2203},{t:65,s:2203},{t:100,s:2192},{t:125,s:2131},{t:150,s:2070},{t:200,s:2019},{t:250,s:1988}]},
+  {spec:"SA-240 S31200 PNo.10H",den:7800,st:[{t:40,s:2009},{t:65,s:2009},{t:100,s:2009},{t:125,s:1958},{t:150,s:1907},{t:200,s:1856},{t:250,s:1835},{t:300,s:1835},{t:325,s:1835}]},
+  {spec:"SA-240 S31260 PNo.10H",den:7800,st:[{t:40,s:2009},{t:65,s:2009},{t:100,s:1999},{t:125,s:1958},{t:150,s:1907},{t:200,s:1856},{t:250,s:1846},{t:300,s:1846},{t:325,s:1846},{t:350,s:1846}]},
+  {spec:"SA-240 S31254 [t <= 5] PNo.8",den:8100,st:[{t:40,s:2009},{t:65,s:2009},{t:100,s:2009},{t:125,s:1968},{t:150,s:1907},{t:200,s:1825},{t:250,s:1764},{t:300,s:1723},{t:325,s:1713},{t:350,s:1703},{t:375,s:1693},{t:400,s:1683}]},
+  {spec:"SA-240 S31254 [t <= 5] PNo.8",den:8100,st:[{t:40,s:2009},{t:65,s:1856},{t:100,s:1693},{t:125,s:1611},{t:150,s:1540},{t:200,s:1428},{t:250,s:1356},{t:300,s:1305},{t:325,s:1275},{t:350,s:1264},{t:375,s:1254},{t:400,s:1244}]},
+  {spec:"SA-240 S31254 [t > 5] PNo.8",den:8100,st:[{t:40,s:1907},{t:65,s:1907},{t:100,s:1897},{t:125,s:1866},{t:150,s:1815},{t:200,s:1733},{t:250,s:1672},{t:300,s:1642},{t:325,s:1632},{t:350,s:1621},{t:375,s:1611},{t:400,s:1611}]},
+  {spec:"SA-240 S31254 [t > 5] PNo.8",den:8100,st:[{t:40,s:1907},{t:65,s:1815},{t:100,s:1703},{t:125,s:1611},{t:150,s:1540},{t:200,s:1428},{t:250,s:1356},{t:300,s:1305},{t:325,s:1275},{t:350,s:1264},{t:375,s:1254},{t:400,s:1244}]},
+  {spec:"SA-240 201-1 S20100 PNo.8",den:7810,st:[{t:40,s:1774},{t:65,s:1550},{t:100,s:1326},{t:125,s:1234},{t:150,s:1162}]},
+  {spec:"SA-240 201-2 S20100 PNo.8",den:7810,st:[{t:40,s:1907},{t:65,s:1744},{t:100,s:1570},{t:125,s:1479},{t:150,s:1377}]},
+  {spec:"SA-240 201LN S20153 PNo.8",den:7810,st:[{t:40,s:1907}]},
+  {spec:"SA-240 26-3-3 S44660 [t <= 5] PNo.10K",den:7750,st:[{t:40,s:1713},{t:65,s:1713},{t:100,s:1713},{t:125,s:1703},{t:150,s:1703},{t:200,s:1683},{t:250,s:1672},{t:300,s:1662},{t:325,s:1652},{t:350,s:1652},{t:375,s:1642}]},
+  {spec:"SA-240 304H S30409 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1407},{t:100,s:1397},{t:125,s:1366},{t:150,s:1326},{t:200,s:1285},{t:250,s:1244},{t:300,s:1183},{t:325,s:1162},{t:350,s:1132},{t:375,s:1111},{t:400,s:1091},{t:425,s:1071},{t:450,s:1050},{t:475,s:1030},{t:500,s:1013},{t:525,s:999},{t:550,s:951},{t:575,s:812},{t:600,s:667},{t:625,s:524},{t:650,s:425},{t:675,s:335},{t:700,s:270},{t:725,s:217},{t:750,s:175},{t:775,s:142},{t:800,s:113},{t:825,s:89}]},
+  {spec:"SA-240 304H S30409 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1285},{t:100,s:1152},{t:125,s:1091},{t:150,s:1050},{t:200,s:976},{t:250,s:917},{t:300,s:876},{t:325,s:858},{t:350,s:838},{t:375,s:821},{t:400,s:808},{t:425,s:788},{t:450,s:775},{t:475,s:763},{t:500,s:750},{t:525,s:738},{t:550,s:722},{t:575,s:703},{t:600,s:667},{t:625,s:524},{t:650,s:425},{t:675,s:335},{t:700,s:270},{t:725,s:217},{t:750,s:175},{t:775,s:142},{t:800,s:113},{t:825,s:89}]},
+  {spec:"SA-240 304L S30403 PNo.8",den:8030,st:[{t:40,s:1173},{t:65,s:1173},{t:100,s:1173},{t:125,s:1173},{t:150,s:1173},{t:200,s:1122},{t:250,s:1050},{t:300,s:996},{t:325,s:977},{t:350,s:960},{t:375,s:947},{t:400,s:934},{t:425,s:915},{t:450,s:901}]},
+  {spec:"SA-240 304L S30403 PNo.8",den:8030,st:[{t:40,s:1173},{t:65,s:1081},{t:100,s:989},{t:125,s:939},{t:150,s:898},{t:200,s:828},{t:250,s:775},{t:300,s:739},{t:325,s:726},{t:350,s:714},{t:375,s:701},{t:400,s:688},{t:425,s:682},{t:450,s:676}]},
+  {spec:"SA-240 304LN S30453 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1407},{t:100,s:1397},{t:125,s:1366},{t:150,s:1326},{t:200,s:1285},{t:250,s:1244},{t:300,s:1183},{t:325,s:1162},{t:350,s:1132},{t:375,s:1111},{t:400,s:1091},{t:425,s:1071},{t:450,s:1050}]},
+  {spec:"SA-240 304N S30451 PNo.8",den:8030,st:[{t:40,s:1611},{t:65,s:1611},{t:100,s:1611},{t:125,s:1570},{t:150,s:1519},{t:200,s:1438},{t:250,s:1346},{t:300,s:1275},{t:325,s:1244},{t:350,s:1224},{t:375,s:1203},{t:400,s:1183},{t:425,s:1173},{t:450,s:1152},{t:475,s:1132},{t:500,s:1111},{t:525,s:1081},{t:550,s:1002},{t:575,s:801},{t:600,s:656},{t:625,s:524},{t:650,s:424}]},
+  {spec:"SA-240 304N S30451 PNo.8",den:8030,st:[{t:40,s:1611},{t:65,s:1468},{t:100,s:1315},{t:125,s:1234},{t:150,s:1173},{t:200,s:1071},{t:250,s:995},{t:300,s:947},{t:325,s:927},{t:350,s:911},{t:375,s:897},{t:400,s:878},{t:425,s:866},{t:450,s:853},{t:475,s:834},{t:500,s:821},{t:525,s:804},{t:550,s:788},{t:575,s:755},{t:600,s:656},{t:625,s:524},{t:650,s:424}]},
+  {spec:"SA-240 309Cb S30940 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1407},{t:100,s:1407},{t:125,s:1407},{t:150,s:1407},{t:200,s:1407},{t:250,s:1377},{t:300,s:1336},{t:325,s:1315},{t:350,s:1295},{t:375,s:1275},{t:400,s:1264},{t:425,s:1244},{t:450,s:1234},{t:475,s:1213},{t:500,s:1173},{t:525,s:912},{t:550,s:604},{t:575,s:451},{t:600,s:324},{t:625,s:242},{t:650,s:172},{t:675,s:109},{t:700,s:62},{t:725,s:39},{t:750,s:30},{t:775,s:24},{t:800,s:18},{t:825,s:12}]},
+  {spec:"SA-240 309Cb S30940 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1315},{t:100,s:1224},{t:125,s:1173},{t:150,s:1132},{t:200,s:1071},{t:250,s:1020},{t:300,s:986},{t:325,s:973},{t:350,s:960},{t:375,s:947},{t:400,s:934},{t:425,s:922},{t:450,s:910},{t:475,s:896},{t:500,s:884},{t:525,s:800},{t:550,s:604},{t:575,s:451},{t:600,s:324},{t:625,s:242},{t:650,s:172},{t:675,s:109},{t:700,s:62},{t:725,s:39},{t:750,s:30},{t:775,s:24},{t:800,s:18},{t:825,s:12}]},
+  {spec:"SA-240 309H S30909 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1407},{t:100,s:1407},{t:125,s:1407},{t:150,s:1407},{t:200,s:1407},{t:250,s:1377},{t:300,s:1336},{t:325,s:1315},{t:350,s:1295},{t:375,s:1275},{t:400,s:1264},{t:425,s:1244},{t:450,s:1234},{t:475,s:1213},{t:500,s:1193},{t:525,s:1091},{t:550,s:855},{t:575,s:665},{t:600,s:496},{t:625,s:370},{t:650,s:278},{t:675,s:215},{t:700,s:162},{t:725,s:127},{t:750,s:101},{t:775,s:79},{t:800,s:62},{t:825,s:47}]},
+  {spec:"SA-240 309H S30909 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1315},{t:100,s:1213},{t:125,s:1162},{t:150,s:1132},{t:200,s:1071},{t:250,s:1020},{t:300,s:986},{t:325,s:973},{t:350,s:960},{t:375,s:947},{t:400,s:934},{t:425,s:922},{t:450,s:910},{t:475,s:896},{t:500,s:884},{t:525,s:871},{t:550,s:805},{t:575,s:665},{t:600,s:496},{t:625,s:370},{t:650,s:278},{t:675,s:215},{t:700,s:162},{t:725,s:127},{t:750,s:101},{t:775,s:79},{t:800,s:62},{t:825,s:47}]},
+  {spec:"SA-240 309S S30908 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1407},{t:100,s:1407},{t:125,s:1407},{t:150,s:1407},{t:200,s:1407},{t:250,s:1377},{t:300,s:1336},{t:325,s:1315},{t:350,s:1295},{t:375,s:1275},{t:400,s:1264},{t:425,s:1244},{t:450,s:1234},{t:475,s:1213},{t:500,s:1173},{t:525,s:912},{t:550,s:604},{t:575,s:451},{t:600,s:324},{t:625,s:242},{t:650,s:172},{t:675,s:109},{t:700,s:62},{t:725,s:39},{t:750,s:30},{t:775,s:24},{t:800,s:18},{t:825,s:12}]},
+  {spec:"SA-240 309S S30908 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1315},{t:100,s:1224},{t:125,s:1173},{t:150,s:1132},{t:200,s:1071},{t:250,s:1020},{t:300,s:986},{t:325,s:973},{t:350,s:960},{t:375,s:947},{t:400,s:934},{t:425,s:922},{t:450,s:910},{t:475,s:896},{t:500,s:884},{t:525,s:800},{t:550,s:604},{t:575,s:451},{t:600,s:324},{t:625,s:242},{t:650,s:172},{t:675,s:109},{t:700,s:62},{t:725,s:39},{t:750,s:30},{t:775,s:24},{t:800,s:18},{t:825,s:12}]},
+  {spec:"SA-240 310Cb S31040 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1407},{t:100,s:1407},{t:125,s:1407},{t:150,s:1407},{t:200,s:1407},{t:250,s:1377},{t:300,s:1315},{t:325,s:1295},{t:350,s:1275},{t:375,s:1254},{t:400,s:1244},{t:425,s:1224},{t:450,s:1213},{t:475,s:1193},{t:500,s:1142},{t:525,s:889},{t:550,s:604},{t:575,s:451},{t:600,s:324},{t:625,s:242},{t:650,s:172},{t:675,s:109},{t:700,s:62},{t:725,s:39},{t:750,s:30},{t:775,s:24},{t:800,s:18},{t:825,s:12}]},
+  {spec:"SA-240 310Cb S31040 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1315},{t:100,s:1224},{t:125,s:1173},{t:150,s:1132},{t:200,s:1071},{t:250,s:1020},{t:300,s:973},{t:325,s:959},{t:350,s:946},{t:375,s:933},{t:400,s:921},{t:425,s:908},{t:450,s:895},{t:475,s:882},{t:500,s:870},{t:525,s:793},{t:550,s:604},{t:575,s:451},{t:600,s:324},{t:625,s:242},{t:650,s:172},{t:675,s:109},{t:700,s:62},{t:725,s:39},{t:750,s:30},{t:775,s:24},{t:800,s:18},{t:825,s:12}]},
+  {spec:"SA-240 310H S31009 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1407},{t:100,s:1407},{t:125,s:1407},{t:150,s:1407},{t:200,s:1397},{t:250,s:1366},{t:300,s:1315},{t:325,s:1295},{t:350,s:1275},{t:375,s:1254},{t:400,s:1244},{t:425,s:1224},{t:450,s:1213},{t:475,s:1193},{t:500,s:1183},{t:525,s:1060},{t:550,s:864},{t:575,s:660},{t:600,s:496},{t:625,s:369},{t:650,s:278},{t:675,s:215},{t:700,s:162},{t:725,s:127},{t:750,s:101},{t:775,s:78},{t:800,s:61},{t:825,s:48}]},
+  {spec:"SA-240 310H S31009 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1315},{t:100,s:1224},{t:125,s:1173},{t:150,s:1132},{t:200,s:1071},{t:250,s:1015},{t:300,s:973},{t:325,s:959},{t:350,s:946},{t:375,s:933},{t:400,s:921},{t:425,s:908},{t:450,s:895},{t:475,s:882},{t:500,s:870},{t:525,s:857},{t:550,s:814},{t:575,s:660},{t:600,s:496},{t:625,s:369},{t:650,s:278},{t:675,s:215},{t:700,s:162},{t:725,s:127},{t:750,s:101},{t:775,s:78},{t:800,s:61},{t:825,s:48}]},
+  {spec:"SA-240 310MoLN S31050 PNo.8",den:8030,st:[{t:40,s:1611},{t:65,s:1611},{t:100,s:1581},{t:125,s:1540},{t:150,s:1499},{t:200,s:1448},{t:250,s:1407},{t:300,s:1377},{t:325,s:1366}]},
+  {spec:"SA-240 310MoLN S31050 PNo.8",den:8030,st:[{t:40,s:1611},{t:65,s:1499},{t:100,s:1377},{t:125,s:1315},{t:150,s:1275},{t:200,s:1183},{t:250,s:1132},{t:300,s:1081},{t:325,s:1050}]},
+  {spec:"SA-240 310S S31008 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1407},{t:100,s:1407},{t:125,s:1407},{t:150,s:1407},{t:200,s:1407},{t:250,s:1377},{t:300,s:1315},{t:325,s:1295},{t:350,s:1275},{t:375,s:1254},{t:400,s:1244},{t:425,s:1224},{t:450,s:1213},{t:475,s:1193},{t:500,s:1142},{t:525,s:889},{t:550,s:604},{t:575,s:451},{t:600,s:324},{t:625,s:242},{t:650,s:172},{t:675,s:109},{t:700,s:62},{t:725,s:39},{t:750,s:30},{t:775,s:24},{t:800,s:18},{t:825,s:12}]},
+  {spec:"SA-240 310S S31008 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1315},{t:100,s:1224},{t:125,s:1173},{t:150,s:1132},{t:200,s:1071},{t:250,s:1020},{t:300,s:973},{t:325,s:959},{t:350,s:946},{t:375,s:933},{t:400,s:921},{t:425,s:908},{t:450,s:895},{t:475,s:882},{t:500,s:870},{t:525,s:793},{t:550,s:604},{t:575,s:451},{t:600,s:324},{t:625,s:242},{t:650,s:172},{t:675,s:109},{t:700,s:62},{t:725,s:39},{t:750,s:30},{t:775,s:24},{t:800,s:18},{t:825,s:12}]},
+  {spec:"SA-240 316Cb S31640 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1407},{t:100,s:1407},{t:125,s:1407},{t:150,s:1407},{t:200,s:1366},{t:250,s:1275},{t:300,s:1193},{t:325,s:1183},{t:350,s:1162},{t:375,s:1142},{t:400,s:1132},{t:425,s:1122},{t:450,s:1111},{t:475,s:1101},{t:500,s:1091},{t:525,s:1081},{t:550,s:1071},{t:575,s:1018},{t:600,s:819},{t:625,s:668},{t:650,s:514},{t:675,s:394},{t:700,s:302},{t:725,s:235},{t:750,s:180},{t:775,s:137},{t:800,s:106},{t:825,s:82}]},
+  {spec:"SA-240 316Cb S31640 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1326},{t:100,s:1224},{t:125,s:1162},{t:150,s:1111},{t:200,s:1013},{t:250,s:940},{t:300,s:884},{t:325,s:867},{t:350,s:858},{t:375,s:845},{t:400,s:836},{t:425,s:830},{t:450,s:822},{t:475,s:814},{t:500,s:808},{t:525,s:803},{t:550,s:793},{t:575,s:786},{t:600,s:765},{t:625,s:668},{t:650,s:514},{t:675,s:394},{t:700,s:302},{t:725,s:235},{t:750,s:180},{t:775,s:137},{t:800,s:106},{t:825,s:82}]},
+  {spec:"SA-240 316H S31609 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1407},{t:100,s:1407},{t:125,s:1407},{t:150,s:1407},{t:200,s:1366},{t:250,s:1285},{t:300,s:1213},{t:325,s:1183},{t:350,s:1162},{t:375,s:1142},{t:400,s:1132},{t:425,s:1122},{t:450,s:1101},{t:475,s:1101},{t:500,s:1091},{t:525,s:1081},{t:550,s:1071},{t:575,s:1018},{t:600,s:819},{t:625,s:668},{t:650,s:514},{t:675,s:394},{t:700,s:302},{t:725,s:235},{t:750,s:180},{t:775,s:137},{t:800,s:106},{t:825,s:82}]},
+  {spec:"SA-240 316H S31609 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1305},{t:100,s:1203},{t:125,s:1142},{t:150,s:1091},{t:200,s:1012},{t:250,s:946},{t:300,s:898},{t:325,s:878},{t:350,s:858},{t:375,s:845},{t:400,s:836},{t:425,s:830},{t:450,s:822},{t:475,s:814},{t:500,s:808},{t:525,s:803},{t:550,s:793},{t:575,s:786},{t:600,s:765},{t:625,s:668},{t:650,s:514},{t:675,s:394},{t:700,s:302},{t:725,s:235},{t:750,s:180},{t:775,s:137},{t:800,s:106},{t:825,s:82}]},
+  {spec:"SA-240 316L S31603 PNo.8",den:8030,st:[{t:40,s:1173},{t:65,s:1173},{t:100,s:1173},{t:125,s:1173},{t:150,s:1173},{t:200,s:1111},{t:250,s:1050},{t:300,s:999},{t:325,s:976},{t:350,s:960},{t:375,s:946},{t:400,s:927},{t:425,s:908},{t:450,s:895},{t:475,s:883}]},
+  {spec:"SA-240 316L S31603 PNo.8",den:8030,st:[{t:40,s:1173},{t:65,s:1081},{t:100,s:982},{t:125,s:931},{t:150,s:891},{t:200,s:828},{t:250,s:775},{t:300,s:739},{t:325,s:726},{t:350,s:714},{t:375,s:702},{t:400,s:688},{t:425,s:676},{t:450,s:663},{t:475,s:651}]},
+  {spec:"SA-240 316LN S31653 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1407},{t:100,s:1407},{t:125,s:1407},{t:150,s:1407},{t:200,s:1336},{t:250,s:1244},{t:300,s:1183},{t:325,s:1152},{t:350,s:1122},{t:375,s:1091},{t:400,s:1071},{t:425,s:1040},{t:450,s:1017}]},
+  {spec:"SA-240 316N S31651 PNo.8",den:8030,st:[{t:40,s:1611},{t:65,s:1611},{t:100,s:1611},{t:125,s:1581},{t:150,s:1550},{t:200,s:1509},{t:250,s:1489},{t:300,s:1479},{t:325,s:1468},{t:350,s:1428},{t:375,s:1397},{t:400,s:1377},{t:425,s:1356},{t:450,s:1326},{t:475,s:1305},{t:500,s:1285},{t:525,s:1264},{t:550,s:1213},{t:575,s:1030},{t:600,s:832},{t:625,s:666},{t:650,s:514}]},
+  {spec:"SA-240 316N S31651 PNo.8",den:8030,st:[{t:40,s:1611},{t:65,s:1530},{t:100,s:1438},{t:125,s:1387},{t:150,s:1336},{t:200,s:1244},{t:250,s:1173},{t:300,s:1111},{t:325,s:1091},{t:350,s:1060},{t:375,s:1040},{t:400,s:1019},{t:425,s:999},{t:450,s:980},{t:475,s:968},{t:500,s:949},{t:525,s:935},{t:550,s:919},{t:575,s:902},{t:600,s:832},{t:625,s:666},{t:650,s:514}]},
+  {spec:"SA-240 316Ti S31635 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1407},{t:100,s:1407},{t:125,s:1407},{t:150,s:1407},{t:200,s:1366},{t:250,s:1275},{t:300,s:1193},{t:325,s:1183},{t:350,s:1162},{t:375,s:1142},{t:400,s:1132},{t:425,s:1122},{t:450,s:1111},{t:475,s:1101},{t:500,s:1091},{t:525,s:1081},{t:550,s:1071},{t:575,s:1018},{t:600,s:819},{t:625,s:668},{t:650,s:514},{t:675,s:394},{t:700,s:302},{t:725,s:235},{t:750,s:180},{t:775,s:137},{t:800,s:106},{t:825,s:82}]},
+  {spec:"SA-240 316Ti S31635 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1326},{t:100,s:1224},{t:125,s:1162},{t:150,s:1111},{t:200,s:1013},{t:250,s:940},{t:300,s:884},{t:325,s:867},{t:350,s:858},{t:375,s:845},{t:400,s:836},{t:425,s:830},{t:450,s:822},{t:475,s:814},{t:500,s:808},{t:525,s:803},{t:550,s:793},{t:575,s:786},{t:600,s:765},{t:625,s:668},{t:650,s:514},{t:675,s:394},{t:700,s:302},{t:725,s:235},{t:750,s:180},{t:775,s:137},{t:800,s:106},{t:825,s:82}]},
+  {spec:"SA-240 317L S31703 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1407},{t:100,s:1407},{t:125,s:1397},{t:150,s:1377},{t:200,s:1336},{t:250,s:1254},{t:300,s:1203},{t:325,s:1183},{t:350,s:1152},{t:375,s:1132},{t:400,s:1111},{t:425,s:1091},{t:450,s:1071},{t:475,s:1050}]},
+  {spec:"SA-240 317L S31703 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1295},{t:100,s:1173},{t:125,s:1111},{t:150,s:1071},{t:200,s:990},{t:250,s:930},{t:300,s:890},{t:325,s:871},{t:350,s:855},{t:375,s:841},{t:400,s:822},{t:425,s:810},{t:450,s:796},{t:475,s:784}]},
+  {spec:"SA-240 321H S32109 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1407},{t:100,s:1407},{t:125,s:1377},{t:150,s:1346},{t:200,s:1315},{t:250,s:1315},{t:300,s:1295},{t:325,s:1275},{t:350,s:1254},{t:375,s:1234},{t:400,s:1213},{t:425,s:1193},{t:450,s:1173},{t:475,s:1162},{t:500,s:1152},{t:525,s:1142},{t:550,s:1050},{t:575,s:792},{t:600,s:599},{t:625,s:469},{t:650,s:376},{t:675,s:293},{t:700,s:234},{t:725,s:188},{t:750,s:147},{t:775,s:117},{t:800,s:93},{t:825,s:68}]},
+  {spec:"SA-240 321H S32109 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1336},{t:100,s:1254},{t:125,s:1203},{t:150,s:1162},{t:200,s:1081},{t:250,s:1017},{t:300,s:964},{t:325,s:941},{t:350,s:925},{t:375,s:912},{t:400,s:892},{t:425,s:886},{t:450,s:874},{t:475,s:867},{t:500,s:856},{t:525,s:846},{t:550,s:840},{t:575,s:792},{t:600,s:599},{t:625,s:469},{t:650,s:376},{t:675,s:293},{t:700,s:234},{t:725,s:188},{t:750,s:147},{t:775,s:117},{t:800,s:93},{t:825,s:68}]},
+  {spec:"SA-240 347H S34709 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1407},{t:100,s:1397},{t:125,s:1366},{t:150,s:1315},{t:200,s:1254},{t:250,s:1213},{t:300,s:1193},{t:325,s:1183},{t:350,s:1183},{t:375,s:1183},{t:400,s:1183},{t:425,s:1183},{t:450,s:1183},{t:475,s:1173},{t:500,s:1173},{t:525,s:1162},{t:550,s:1152},{t:575,s:1111},{t:600,s:941},{t:625,s:707},{t:650,s:550},{t:675,s:422},{t:700,s:324},{t:725,s:244},{t:750,s:192},{t:775,s:149},{t:800,s:110},{t:825,s:80}]},
+  {spec:"SA-240 347H S34709 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1346},{t:100,s:1285},{t:125,s:1244},{t:150,s:1203},{t:200,s:1132},{t:250,s:1071},{t:300,s:1018},{t:325,s:998},{t:350,s:980},{t:375,s:969},{t:400,s:963},{t:425,s:956},{t:450,s:950},{t:475,s:943},{t:500,s:942},{t:525,s:942},{t:550,s:942},{t:575,s:940},{t:600,s:909},{t:625,s:707},{t:650,s:550},{t:675,s:422},{t:700,s:324},{t:725,s:244},{t:750,s:192},{t:775,s:149},{t:800,s:110},{t:825,s:80}]},
+  {spec:"SA-240 348H S34809 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1407},{t:100,s:1397},{t:125,s:1366},{t:150,s:1315},{t:200,s:1254},{t:250,s:1213},{t:300,s:1193},{t:325,s:1183},{t:350,s:1183},{t:375,s:1183},{t:400,s:1183},{t:425,s:1183},{t:450,s:1183}]},
+  {spec:"SA-240 410S S41008 PNo.7",den:7750,st:[{t:40,s:1203},{t:65,s:1203},{t:100,s:1203},{t:125,s:1193},{t:150,s:1183},{t:200,s:1162},{t:250,s:1152},{t:300,s:1132},{t:325,s:1111},{t:350,s:1091},{t:375,s:1060},{t:400,s:1030},{t:425,s:994},{t:450,s:948},{t:475,s:900},{t:500,s:711},{t:525,s:517},{t:550,s:386},{t:575,s:269},{t:600,s:184},{t:625,s:118},{t:650,s:68}]},
+  {spec:"SA-240 XM-15 S38100 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1407},{t:100,s:1397},{t:125,s:1366},{t:150,s:1326},{t:200,s:1285},{t:250,s:1244},{t:300,s:1183},{t:325,s:1162},{t:350,s:1132},{t:375,s:1111},{t:400,s:1091},{t:425,s:1071},{t:450,s:1050},{t:475,s:1030},{t:500,s:1013},{t:525,s:999},{t:550,s:951}]},
+  {spec:"SA-240 XM-15 S38100 PNo.8",den:8030,st:[{t:40,s:1407},{t:65,s:1285},{t:100,s:1152},{t:125,s:1091},{t:150,s:1050},{t:200,s:976},{t:250,s:917},{t:300,s:876},{t:325,s:858},{t:350,s:838},{t:375,s:821},{t:400,s:808},{t:425,s:788},{t:450,s:775},{t:475,s:763},{t:500,s:750},{t:525,s:738},{t:550,s:722}]},
+  {spec:"SA-240 XM-19 S20910 PNo.8",den:7810,st:[{t:40,s:2009},{t:65,s:1999},{t:100,s:1988},{t:125,s:1948},{t:150,s:1886},{t:200,s:1835},{t:250,s:1795},{t:300,s:1774},{t:325,s:1764},{t:350,s:1744},{t:375,s:1733},{t:400,s:1723},{t:425,s:1703},{t:450,s:1683},{t:475,s:1662},{t:500,s:1642},{t:525,s:1611},{t:550,s:1601},{t:575,s:1550},{t:600,s:1346},{t:625,s:852},{t:650,s:572}]},
+  {spec:"SA-240 XM-27 S44627 PNo.10I",den:7750,st:[{t:40,s:1305},{t:65,s:1305},{t:100,s:1305},{t:125,s:1295},{t:150,s:1285},{t:200,s:1275},{t:250,s:1275},{t:300,s:1275},{t:325,s:1275},{t:350,s:1275}]},
+  {spec:"SA-240 XM-29 S24000 PNo.8",den:7810,st:[{t:40,s:2009},{t:65,s:1999},{t:100,s:1948},{t:125,s:1886},{t:150,s:1825},{t:200,s:1754},{t:250,s:1713},{t:300,s:1683},{t:325,s:1662},{t:350,s:1642},{t:375,s:1611},{t:400,s:1570},{t:425,s:1540},{t:450,s:1499}]},
+  {spec:"SA-240 XM-29 S24000 PNo.8",den:7810,st:[{t:40,s:2009},{t:65,s:1999},{t:100,s:1948},{t:125,s:1856},{t:150,s:1754},{t:200,s:1550},{t:250,s:1428},{t:300,s:1366},{t:325,s:1336},{t:350,s:1315},{t:375,s:1295},{t:400,s:1275},{t:425,s:1254},{t:450,s:1224}]},
+  {spec:"SA-240 XM-33 S44626 PNo.10I",den:7750,st:[{t:40,s:1366},{t:65,s:1366},{t:100,s:1366},{t:125,s:1366},{t:150,s:1356},{t:200,s:1336},{t:250,s:1326},{t:300,s:1305},{t:325,s:1285},{t:350,s:1264}]},
+  {spec:"SA-283 A PNo.1",den:7750,st:[{t:40,s:907},{t:65,s:907},{t:100,s:907},{t:125,s:907},{t:150,s:907},{t:200,s:907},{t:250,s:907},{t:300,s:880},{t:325,s:855},{t:350,s:830}]},
+  {spec:"SA-283 B PNo.1",den:7750,st:[{t:40,s:1005},{t:65,s:1005},{t:100,s:1005},{t:125,s:1005},{t:150,s:1005},{t:200,s:1005},{t:250,s:1005},{t:300,s:985},{t:325,s:960},{t:350,s:924}]},
+  {spec:"SA-283 C K02401 PNo.1",den:7750,st:[{t:40,s:1101},{t:65,s:1101},{t:100,s:1101},{t:125,s:1101},{t:150,s:1101},{t:200,s:1101},{t:250,s:1101},{t:300,s:1091},{t:325,s:1060},{t:350,s:1030}]},
+  {spec:"SA-283 D K02702 PNo.1",den:7750,st:[{t:40,s:1203},{t:65,s:1203},{t:100,s:1203},{t:125,s:1203},{t:150,s:1203},{t:200,s:1203},{t:250,s:1203},{t:300,s:1203},{t:325,s:1173},{t:350,s:1132}]},
+  {spec:"SA-285 A K01700 PNo.1",den:7750,st:[{t:40,s:907},{t:65,s:907},{t:100,s:907},{t:125,s:907},{t:150,s:907},{t:200,s:907},{t:250,s:907},{t:300,s:880},{t:325,s:855},{t:350,s:830},{t:375,s:804},{t:400,s:748},{t:425,s:653},{t:450,s:572},{t:475,s:454},{t:500,s:323}]},
+  {spec:"SA-285 B K02200 PNo.1",den:7750,st:[{t:40,s:1005},{t:65,s:1005},{t:100,s:1005},{t:125,s:1005},{t:150,s:1005},{t:200,s:1005},{t:250,s:1005},{t:300,s:985},{t:325,s:960},{t:350,s:925},{t:375,s:867},{t:400,s:769},{t:425,s:669},{t:450,s:538},{t:475,s:394},{t:500,s:248}]},
+  {spec:"SA-285 B K02200 PNo.1",den:7750,st:[{t:40,s:1005},{t:65,s:1005},{t:100,s:1005},{t:125,s:1005},{t:150,s:1005},{t:200,s:1005},{t:250,s:1005},{t:300,s:985},{t:325,s:960},{t:350,s:924},{t:375,s:868},{t:400,s:783},{t:425,s:681},{t:450,s:589},{t:475,s:458},{t:500,s:315}]},
+  {spec:"SA-285 C K02801 PNo.1",den:7750,st:[{t:40,s:1101},{t:65,s:1101},{t:100,s:1101},{t:125,s:1101},{t:150,s:1101},{t:200,s:1101},{t:250,s:1101},{t:300,s:1091},{t:325,s:1060},{t:350,s:1030},{t:375,s:997},{t:400,s:909},{t:425,s:769},{t:450,s:638},{t:475,s:464},{t:500,s:322}]},
+  {spec:"SA-299 K02803 [t <= 25] PNo.1",den:7750,st:[{t:40,s:1509},{t:65,s:1509},{t:100,s:1509},{t:125,s:1509},{t:150,s:1509},{t:200,s:1509},{t:250,s:1509},{t:300,s:1509},{t:325,s:1499},{t:350,s:1438},{t:375,s:1356},{t:400,s:1091},{t:425,s:898},{t:450,s:689},{t:475,s:518},{t:500,s:344},{t:525,s:217},{t:550,s:132}]},
+  {spec:"SA-299 K02803 [t > 25] PNo.1",den:7750,st:[{t:40,s:1509},{t:65,s:1509},{t:100,s:1509},{t:125,s:1509},{t:150,s:1509},{t:200,s:1509},{t:250,s:1509},{t:300,s:1458},{t:325,s:1417},{t:350,s:1377},{t:375,s:1326},{t:400,s:1091},{t:425,s:898},{t:450,s:688},{t:475,s:518},{t:500,s:344},{t:525,s:217},{t:550,s:132}]},
+  {spec:"SA-302 A K12021 PNo.3",den:7750,st:[{t:40,s:1509},{t:65,s:1509},{t:100,s:1509},{t:125,s:1509},{t:150,s:1509},{t:200,s:1509},{t:250,s:1509},{t:300,s:1509},{t:325,s:1509},{t:350,s:1509},{t:375,s:1509},{t:400,s:1509},{t:425,s:1509},{t:450,s:1448},{t:475,s:1091},{t:500,s:694},{t:525,s:439},{t:550,s:236}]},
+  {spec:"SA-302 B K12022 PNo.3",den:7750,st:[{t:40,s:1611},{t:65,s:1611},{t:100,s:1611},{t:125,s:1611},{t:150,s:1611},{t:200,s:1611},{t:250,s:1611},{t:300,s:1611},{t:325,s:1611},{t:350,s:1611},{t:375,s:1611},{t:400,s:1611},{t:425,s:1611},{t:450,s:1458},{t:475,s:1081},{t:500,s:697},{t:525,s:438},{t:550,s:236}]},
+  {spec:"SA-302 C K12039 PNo.3",den:7750,st:[{t:40,s:1611},{t:65,s:1611},{t:100,s:1611},{t:125,s:1611},{t:150,s:1611},{t:200,s:1611},{t:250,s:1611},{t:300,s:1611},{t:325,s:1611},{t:350,s:1611},{t:375,s:1611},{t:400,s:1611},{t:425,s:1611},{t:450,s:1458},{t:475,s:1081},{t:500,s:697},{t:525,s:438},{t:550,s:236}]},
+  {spec:"SA-302 D K12054 PNo.3",den:7750,st:[{t:40,s:1611},{t:65,s:1611},{t:100,s:1611},{t:125,s:1611},{t:150,s:1611},{t:200,s:1611},{t:250,s:1611},{t:300,s:1611},{t:325,s:1611},{t:350,s:1611},{t:375,s:1611},{t:400,s:1611},{t:425,s:1611},{t:450,s:1458},{t:475,s:1081},{t:500,s:697},{t:525,s:438},{t:550,s:236}]},
+  {spec:"SA-353 K81340 PNo.11A",den:7750,st:[{t:40,s:2009},{t:65,s:2009},{t:100,s:1856},{t:125,s:1815}]},
+  {spec:"SA-353 K81340 PNo.11A",den:7750,st:[{t:40,s:1907},{t:65,s:1907},{t:100,s:1764},{t:125,s:1723}]},
+  {spec:"SA-353 K81340 PNo.11A",den:7750,st:[{t:40,s:1907},{t:65,s:1907},{t:100,s:1764}]},
+  {spec:"SA-36 K02600 PNo.1",den:7750,st:[{t:40,s:1162},{t:65,s:1162},{t:100,s:1162},{t:125,s:1162},{t:150,s:1162},{t:200,s:1162},{t:250,s:1162},{t:300,s:1162},{t:325,s:1162},{t:350,s:1162},{t:375,s:1071}]},
+  {spec:"SA-387 2 K12143 1 PNo.3",den:7750,st:[{t:40,s:1101},{t:65,s:1101},{t:100,s:1101},{t:125,s:1101},{t:150,s:1101},{t:200,s:1101},{t:250,s:1101},{t:300,s:1101},{t:325,s:1101},{t:350,s:1101},{t:375,s:1101},{t:400,s:1101},{t:425,s:1101},{t:450,s:1081},{t:475,s:1050},{t:500,s:782},{t:525,s:506},{t:550,s:318}]},
+  {spec:"SA-387 2 K12143 2 PNo.3",den:7750,st:[{t:40,s:1407},{t:65,s:1407},{t:100,s:1407},{t:125,s:1407},{t:150,s:1407},{t:200,s:1407},{t:250,s:1407},{t:300,s:1407},{t:325,s:1407},{t:350,s:1407},{t:375,s:1407},{t:400,s:1407},{t:425,s:1407},{t:450,s:1377},{t:475,s:1326},{t:500,s:907},{t:525,s:469},{t:550,s:331}]},
+  {spec:"SA-387 5 K41545 1 PNo.5B",den:7750,st:[{t:40,s:1203},{t:65,s:1203},{t:100,s:1203},{t:125,s:1183},{t:150,s:1162},{t:200,s:1162},{t:250,s:1152},{t:300,s:1142},{t:325,s:1132},{t:350,s:1111},{t:375,s:1091},{t:400,s:1060},{t:425,s:1020},{t:450,s:980},{t:475,s:830},{t:500,s:629},{t:525,s:473},{t:550,s:354},{t:575,s:263},{t:600,s:184},{t:625,s:117},{t:650,s:68}]},
+  {spec:"SA-387 5 K41545 2 PNo.5B",den:7750,st:[{t:40,s:1509},{t:65,s:1509},{t:100,s:1499},{t:125,s:1489},{t:150,s:1458},{t:200,s:1448},{t:250,s:1448},{t:300,s:1428},{t:325,s:1417},{t:350,s:1397},{t:375,s:1366},{t:400,s:1326},{t:425,s:1285},{t:450,s:1060},{t:475,s:821},{t:500,s:632},{t:525,s:472},{t:550,s:355},{t:575,s:263},{t:600,s:184},{t:625,s:117},{t:650,s:68}]},
+  {spec:"SA-387 11 K11789 1 PNo.4",den:7750,st:[{t:40,s:1203},{t:65,s:1203},{t:100,s:1203},{t:125,s:1203},{t:150,s:1203},{t:200,s:1203},{t:250,s:1203},{t:300,s:1203},{t:325,s:1203},{t:350,s:1203},{t:375,s:1203},{t:400,s:1203},{t:425,s:1183},{t:450,s:1162},{t:475,s:1030},{t:500,s:762},{t:525,s:527},{t:550,s:372},{t:575,s:257},{t:600,s:179},{t:625,s:126},{t:650,s:82}]},
+  {spec:"SA-387 11 K11789 2 PNo.4",den:7750,st:[{t:40,s:1509},{t:65,s:1509},{t:100,s:1509},{t:125,s:1509},{t:150,s:1509},{t:200,s:1509},{t:250,s:1509},{t:300,s:1509},{t:325,s:1509},{t:350,s:1509},{t:375,s:1509},{t:400,s:1509},{t:425,s:1509},{t:450,s:1458},{t:475,s:1091},{t:500,s:743},{t:525,s:533},{t:550,s:370},{t:575,s:257},{t:600,s:179},{t:625,s:126},{t:650,s:82}]},
+  {spec:"SA-387 12 K11757 1 PNo.4",den:7750,st:[{t:40,s:1101},{t:65,s:1091},{t:100,s:1081},{t:125,s:1071},{t:150,s:1060},{t:200,s:1060},{t:250,s:1060},{t:300,s:1060},{t:325,s:1060},{t:350,s:1060},{t:375,s:1060},{t:400,s:1060},{t:425,s:1060},{t:450,s:1060},{t:475,s:1040},{t:500,s:905},{t:525,s:629},{t:550,s:411},{t:575,s:269},{t:600,s:176},{t:625,s:119},{t:650,s:75}]},
+  {spec:"SA-387 12 K11757 2 PNo.4",den:7750,st:[{t:40,s:1305},{t:65,s:1305},{t:100,s:1275},{t:125,s:1264},{t:150,s:1254},{t:200,s:1254},{t:250,s:1254},{t:300,s:1254},{t:325,s:1254},{t:350,s:1254},{t:375,s:1254},{t:400,s:1254},{t:425,s:1254},{t:450,s:1254},{t:475,s:1254},{t:500,s:963},{t:525,s:614},{t:550,s:416},{t:575,s:268},{t:600,s:176},{t:625,s:119},{t:650,s:75}]},
+  {spec:"SA-387 21 K31545 1 PNo.5A",den:7750,st:[{t:40,s:1203},{t:65,s:1203},{t:100,s:1203},{t:125,s:1183},{t:150,s:1162},{t:200,s:1162},{t:250,s:1162},{t:300,s:1162},{t:325,s:1162},{t:350,s:1162},{t:375,s:1162},{t:400,s:1162},{t:425,s:1162},{t:450,s:1152},{t:475,s:923},{t:500,s:695},{t:525,s:552},{t:550,s:444},{t:575,s:351},{t:600,s:258},{t:625,s:177},{t:650,s:102}]},
+  {spec:"SA-387 21 K31545 2 PNo.5A",den:7750,st:[{t:40,s:1509},{t:65,s:1509},{t:100,s:1499},{t:125,s:1489},{t:150,s:1468},{t:200,s:1448},{t:250,s:1438},{t:300,s:1438},{t:325,s:1428},{t:350,s:1417},{t:375,s:1407},{t:400,s:1387},{t:425,s:1356},{t:450,s:1295},{t:475,s:1020},{t:500,s:742},{t:525,s:560},{t:550,s:415},{t:575,s:300},{t:600,s:208},{t:625,s:160},{t:650,s:88}]},
+  {spec:"SA-387 22 K21590 1 PNo.5A",den:7750,st:[{t:40,s:1203},{t:65,s:1203},{t:100,s:1203},{t:125,s:1183},{t:150,s:1162},{t:200,s:1162},{t:250,s:1162},{t:300,s:1162},{t:325,s:1162},{t:350,s:1162},{t:375,s:1162},{t:400,s:1162},{t:425,s:1162},{t:450,s:1162},{t:475,s:1020},{t:500,s:825},{t:525,s:653},{t:550,s:486},{t:575,s:352},{t:600,s:240},{t:625,s:158},{t:650,s:96}]},
+  {spec:"SA-387 22 K21590 2 PNo.5A",den:7750,st:[{t:40,s:1509},{t:65,s:1509},{t:100,s:1499},{t:125,s:1489},{t:150,s:1468},{t:200,s:1448},{t:250,s:1438},{t:300,s:1438},{t:325,s:1428},{t:350,s:1417},{t:375,s:1407},{t:400,s:1387},{t:425,s:1356},{t:450,s:1326},{t:475,s:1183},{t:500,s:912},{t:525,s:656},{t:550,s:458},{t:575,s:307},{t:600,s:201},{t:625,s:132},{t:650,s:82}]},
+  {spec:"SA-387 91 K90901 2 [t <= 75] PNo.5B",den:7750,st:[{t:40,s:1713},{t:65,s:1713},{t:100,s:1713},{t:125,s:1713},{t:150,s:1713},{t:200,s:1703},{t:250,s:1693},{t:300,s:1672},{t:325,s:1662},{t:350,s:1642},{t:375,s:1601},{t:400,s:1560},{t:425,s:1499},{t:450,s:1438},{t:475,s:1366},{t:500,s:1285},{t:525,s:1193},{t:550,s:1091},{t:575,s:902},{t:600,s:663},{t:625,s:464},{t:650,s:295}]},
+  {spec:"SA-387 91 K90901 2 [t > 75] PNo.5B",den:7750,st:[{t:40,s:1713},{t:65,s:1713},{t:100,s:1713},{t:125,s:1713},{t:150,s:1713},{t:200,s:1703},{t:250,s:1693},{t:300,s:1672},{t:325,s:1662},{t:350,s:1642},{t:375,s:1601},{t:400,s:1560},{t:425,s:1499},{t:450,s:1438},{t:475,s:1366},{t:500,s:1285},{t:525,s:1203},{t:550,s:1050},{t:575,s:822},{t:600,s:628},{t:625,s:466},{t:650,s:295}]},
+  {spec:"SA-455 K03300 [t <= 10] PNo.1",den:7750,st:[{t:40,s:1509},{t:65,s:1509},{t:100,s:1509},{t:125,s:1509},{t:150,s:1509},{t:200,s:1509},{t:250,s:1458},{t:300,s:1387},{t:325,s:1346},{t:350,s:1315}]},
+  {spec:"SA-455 K03300 [10 < t <= 15] PNo.1",den:7750,st:[{t:40,s:1468},{t:65,s:1468},{t:100,s:1468},{t:125,s:1468},{t:150,s:1468},{t:200,s:1468},{t:250,s:1428},{t:300,s:1356},{t:325,s:1315},{t:350,s:1275}]},
+  {spec:"SA-455 K03300 [15 < t <= 19] PNo.1",den:7750,st:[{t:40,s:1407},{t:65,s:1407},{t:100,s:1407},{t:125,s:1407},{t:150,s:1407},{t:200,s:1397},{t:250,s:1346},{t:300,s:1285},{t:325,s:1244},{t:350,s:1213}]},
+  {spec:"SA-515 60 K02401 PNo.1",den:7750,st:[{t:40,s:1203},{t:65,s:1203},{t:100,s:1203},{t:125,s:1203},{t:150,s:1203},{t:200,s:1203},{t:250,s:1203},{t:300,s:1173},{t:325,s:1142},{t:350,s:1101},{t:375,s:1060},{t:400,s:907},{t:425,s:768},{t:450,s:639},{t:475,s:464},{t:500,s:322},{t:525,s:223},{t:550,s:130}]},
+  {spec:"SA-515 65 K02800 PNo.1",den:7750,st:[{t:40,s:1305},{t:65,s:1305},{t:100,s:1305},{t:125,s:1305},{t:150,s:1305},{t:200,s:1305},{t:250,s:1305},{t:300,s:1275},{t:325,s:1244},{t:350,s:1203},{t:375,s:1162},{t:400,s:969},{t:425,s:812},{t:450,s:644},{t:475,s:462},{t:500,s:323},{t:525,s:223},{t:550,s:130}]},
+  {spec:"SA-515 70 K03101 PNo.1",den:7750,st:[{t:40,s:1407},{t:65,s:1407},{t:100,s:1407},{t:125,s:1407},{t:150,s:1407},{t:200,s:1407},{t:250,s:1407},{t:300,s:1387},{t:325,s:1346},{t:350,s:1305},{t:375,s:1254},{t:400,s:1030},{t:425,s:855},{t:450,s:684},{t:475,s:520},{t:500,s:343},{t:525,s:217},{t:550,s:132}]},
+  {spec:"SA-516 55 K01800 PNo.1",den:7750,st:[{t:40,s:1101},{t:65,s:1101},{t:100,s:1101},{t:125,s:1101},{t:150,s:1101},{t:200,s:1101},{t:250,s:1101},{t:300,s:1091},{t:325,s:1060},{t:350,s:1030},{t:375,s:997},{t:400,s:909},{t:425,s:769},{t:450,s:638},{t:475,s:464},{t:500,s:322},{t:525,s:223},{t:550,s:130}]},
+  {spec:"SA-516 60 K02100 PNo.1",den:7750,st:[{t:40,s:1203},{t:65,s:1203},{t:100,s:1203},{t:125,s:1203},{t:150,s:1203},{t:200,s:1203},{t:250,s:1203},{t:300,s:1173},{t:325,s:1142},{t:350,s:1101},{t:375,s:1060},{t:400,s:907},{t:425,s:768},{t:450,s:639},{t:475,s:464},{t:500,s:322},{t:525,s:223},{t:550,s:130}]},
+  {spec:"SA-516 65 K02403 PNo.1",den:7750,st:[{t:40,s:1305},{t:65,s:1305},{t:100,s:1305},{t:125,s:1305},{t:150,s:1305},{t:200,s:1305},{t:250,s:1305},{t:300,s:1275},{t:325,s:1244},{t:350,s:1203},{t:375,s:1162},{t:400,s:969},{t:425,s:812},{t:450,s:644},{t:475,s:462},{t:500,s:323},{t:525,s:223},{t:550,s:130}]},
+  {spec:"SA-516 70 K02700 PNo.1",den:7750,st:[{t:40,s:1407},{t:65,s:1407},{t:100,s:1407},{t:125,s:1407},{t:150,s:1407},{t:200,s:1407},{t:250,s:1407},{t:300,s:1387},{t:325,s:1346},{t:350,s:1305},{t:375,s:1254},{t:400,s:1030},{t:425,s:855},{t:450,s:684},{t:475,s:520},{t:500,s:343},{t:525,s:217},{t:550,s:132}]},
+  {spec:"SA-517 A K11856 [t <= 32] PNo.11B",den:7750,st:[{t:40,s:2315},{t:65,s:2315},{t:100,s:2315},{t:125,s:2315},{t:150,s:2315},{t:200,s:2315},{t:250,s:2315},{t:300,s:2315},{t:325,s:2315},{t:350,s:2305}]},
+  {spec:"SA-517 B K11630 [t <= 32] PNo.11B",den:7750,st:[{t:40,s:2315},{t:65,s:2315},{t:100,s:2315},{t:125,s:2315},{t:150,s:2315},{t:200,s:2315},{t:250,s:2315},{t:300,s:2315},{t:325,s:2315},{t:350,s:2305}]},
+  {spec:"SA-517 E K21604 [t <= 64] PNo.11B",den:7750,st:[{t:40,s:2315},{t:65,s:2315},{t:100,s:2315},{t:125,s:2315},{t:150,s:2315},{t:200,s:2315},{t:250,s:2315},{t:300,s:2315},{t:325,s:2315},{t:350,s:2315}]},
+  {spec:"SA-517 E K21604 [64 < t <= 150] PNo.11B",den:7750,st:[{t:40,s:2111},{t:65,s:2111},{t:100,s:2111},{t:125,s:2111},{t:150,s:2111},{t:200,s:2111},{t:250,s:2111},{t:300,s:2111},{t:325,s:2111},{t:350,s:2111},{t:375,s:2101}]},
+  {spec:"SA-517 F K11576 [t <= 64] PNo.11B",den:7750,st:[{t:40,s:2315},{t:65,s:2315},{t:100,s:2315},{t:125,s:2315},{t:150,s:2315},{t:200,s:2315},{t:250,s:2315},{t:300,s:2315},{t:325,s:2315},{t:350,s:2305}]},
+  {spec:"SA-517 J K11625 [t <= 32] PNo.11B",den:7750,st:[{t:40,s:2315},{t:65,s:2315},{t:100,s:2315},{t:125,s:2315},{t:150,s:2315},{t:200,s:2315},{t:250,s:2315},{t:300,s:2315},{t:325,s:2315},{t:350,s:2315}]},
+  {spec:"SA-517 P K21650 [t <= 64] PNo.11B",den:7750,st:[{t:40,s:2315},{t:65,s:2315},{t:100,s:2315},{t:125,s:2315},{t:150,s:2315},{t:200,s:2315},{t:250,s:2315},{t:300,s:2315},{t:325,s:2315},{t:350,s:2305}]},
+  {spec:"SA-517 P K21650 [64 < t <= 100] PNo.11B",den:7750,st:[{t:40,s:2111},{t:65,s:2111},{t:100,s:2111},{t:125,s:2111},{t:150,s:2111},{t:200,s:2111},{t:250,s:2111},{t:300,s:2111},{t:325,s:2111},{t:350,s:2101},{t:375,s:2060}]},
+  {spec:"SA-533 A K12521 1 PNo.3",den:7750,st:[{t:40,s:1611},{t:65,s:1611},{t:100,s:1611},{t:125,s:1611},{t:150,s:1611},{t:200,s:1611},{t:250,s:1611},{t:300,s:1611},{t:325,s:1611},{t:350,s:1611},{t:375,s:1611},{t:400,s:1611},{t:425,s:1611},{t:450,s:1570},{t:475,s:1081},{t:500,s:787},{t:525,s:567},{t:550,s:327}]},
+  {spec:"SA-533 A K12521 2 PNo.3",den:7750,st:[{t:40,s:1805},{t:65,s:1805},{t:100,s:1805},{t:125,s:1805},{t:150,s:1805},{t:200,s:1805},{t:250,s:1805},{t:300,s:1805},{t:325,s:1805},{t:350,s:1805},{t:375,s:1805},{t:400,s:1805},{t:425,s:1805},{t:450,s:1805}]},
+  {spec:"SA-533 A K12521 3 PNo.11A",den:7750,st:[{t:40,s:2009},{t:65,s:2009},{t:100,s:2009},{t:125,s:2009},{t:150,s:2009},{t:200,s:2009},{t:250,s:2009},{t:300,s:2009},{t:325,s:2009},{t:350,s:2009},{t:375,s:2009}]},
+  {spec:"SA-533 B K12539 1 PNo.3",den:7750,st:[{t:40,s:1611},{t:65,s:1611},{t:100,s:1611},{t:125,s:1611},{t:150,s:1611},{t:200,s:1611},{t:250,s:1611},{t:300,s:1611},{t:325,s:1611},{t:350,s:1611},{t:375,s:1611},{t:400,s:1611},{t:425,s:1611},{t:450,s:1611}]},
+  {spec:"SA-533 B K12539 2 PNo.3",den:7750,st:[{t:40,s:1805},{t:65,s:1805},{t:100,s:1805},{t:125,s:1805},{t:150,s:1805},{t:200,s:1805},{t:250,s:1805},{t:300,s:1805},{t:325,s:1805},{t:350,s:1805},{t:375,s:1805},{t:400,s:1805},{t:425,s:1805},{t:450,s:1805}]},
+  {spec:"SA-533 B K12539 3 PNo.11A",den:7750,st:[{t:40,s:2009},{t:65,s:2009},{t:100,s:2009},{t:125,s:2009},{t:150,s:2009},{t:200,s:2009},{t:250,s:2009},{t:300,s:2009},{t:325,s:2009},{t:350,s:2009},{t:375,s:2009},{t:400,s:2009}]},
+  {spec:"SA-533 C K12554 1 PNo.3",den:7750,st:[{t:40,s:1611},{t:65,s:1611},{t:100,s:1611},{t:125,s:1611},{t:150,s:1611},{t:200,s:1611},{t:250,s:1611},{t:300,s:1611},{t:325,s:1611},{t:350,s:1611},{t:375,s:1611},{t:400,s:1611},{t:425,s:1611},{t:450,s:1611}]},
+  {spec:"SA-533 C K12554 2 PNo.3",den:7750,st:[{t:40,s:1805},{t:65,s:1805},{t:100,s:1805},{t:125,s:1805},{t:150,s:1805},{t:200,s:1805},{t:250,s:1805},{t:300,s:1805},{t:325,s:1805},{t:350,s:1805},{t:375,s:1805},{t:400,s:1805},{t:425,s:1805},{t:450,s:1805}]},
+  {spec:"SA-533 C K12554 3 PNo.11A",den:7750,st:[{t:40,s:2009},{t:65,s:2009},{t:100,s:2009},{t:125,s:2009},{t:150,s:2009},{t:200,s:2009},{t:250,s:2009},{t:300,s:2009},{t:325,s:2009},{t:350,s:2009},{t:375,s:2009}]},
+  {spec:"SA-533 D K12529 1 PNo.3",den:7750,st:[{t:40,s:1611},{t:65,s:1611},{t:100,s:1611},{t:125,s:1611},{t:150,s:1611},{t:200,s:1611},{t:250,s:1611},{t:300,s:1611},{t:325,s:1611},{t:350,s:1611},{t:375,s:1611}]},
+  {spec:"SA-533 D K12529 2 PNo.3",den:7750,st:[{t:40,s:1805},{t:65,s:1805},{t:100,s:1805},{t:125,s:1805},{t:150,s:1805},{t:200,s:1805},{t:250,s:1805},{t:300,s:1805},{t:325,s:1805},{t:350,s:1805},{t:375,s:1805},{t:400,s:1805},{t:425,s:1805},{t:450,s:1805}]},
+  {spec:"SA-533 D K12529 3 PNo.11A",den:7750,st:[{t:40,s:2009},{t:65,s:2009},{t:100,s:2009},{t:125,s:2009},{t:150,s:2009},{t:200,s:2009},{t:250,s:2009},{t:300,s:2009},{t:325,s:2009},{t:350,s:2009},{t:375,s:2009},{t:400,s:2009}]},
+  {spec:"SA-537 K12437 1 [t <= 64] PNo.1",den:7750,st:[{t:40,s:1407},{t:65,s:1407},{t:100,s:1407},{t:125,s:1397},{t:150,s:1387},{t:200,s:1366},{t:250,s:1366},{t:300,s:1366},{t:325,s:1366},{t:350,s:1356},{t:375,s:1275}]},
+  {spec:"SA-537 K12437 1 [64 < t <= 100] PNo.1",den:7750,st:[{t:40,s:1305},{t:65,s:1305},{t:100,s:1305},{t:125,s:1305},{t:150,s:1305},{t:200,s:1305},{t:250,s:1305},{t:300,s:1305},{t:325,s:1305},{t:350,s:1295},{t:375,s:1162}]},
+  {spec:"SA-537 K12437 2 [t <= 64] PNo.1",den:7750,st:[{t:40,s:1611},{t:65,s:1611},{t:100,s:1611},{t:125,s:1601},{t:150,s:1591},{t:200,s:1570},{t:250,s:1570},{t:300,s:1570},{t:325,s:1570},{t:350,s:1540},{t:375,s:1346}]},
+  {spec:"SA-537 K12437 2 [100 < t <= 150] PNo.1",den:7750,st:[{t:40,s:1407},{t:65,s:1407},{t:100,s:1407},{t:125,s:1397},{t:150,s:1387},{t:200,s:1366},{t:250,s:1366},{t:300,s:1366},{t:325,s:1366},{t:350,s:1356},{t:375,s:1275}]},
+  {spec:"SA-537 K12437 2 [64 < t <= 100] PNo.1",den:7750,st:[{t:40,s:1509},{t:65,s:1509},{t:100,s:1499},{t:125,s:1499},{t:150,s:1479},{t:200,s:1468},{t:250,s:1468},{t:300,s:1468},{t:325,s:1468},{t:350,s:1458},{t:375,s:1366}]},
+  {spec:"SA-537 K12437 3 [t <= 64] PNo.1",den:7750,st:[{t:40,s:1611},{t:65,s:1611},{t:100,s:1611},{t:125,s:1601},{t:150,s:1591},{t:200,s:1570},{t:250,s:1570},{t:300,s:1570},{t:325,s:1570},{t:350,s:1540},{t:375,s:1346}]},
+  {spec:"SA-537 K12437 3 [100 < t <= 150] PNo.1",den:7750,st:[{t:40,s:1407},{t:65,s:1407},{t:100,s:1407},{t:125,s:1397},{t:150,s:1387},{t:200,s:1377},{t:250,s:1336},{t:300,s:1285},{t:325,s:1254},{t:350,s:1234},{t:375,s:1203}]},
+  {spec:"SA-537 K12437 3 [64 < t <= 100] PNo.1",den:7750,st:[{t:40,s:1509},{t:65,s:1509},{t:100,s:1499},{t:125,s:1499},{t:150,s:1479},{t:200,s:1468},{t:250,s:1468},{t:300,s:1468},{t:325,s:1468},{t:350,s:1448},{t:375,s:1254}]},
+  {spec:"SA-542 B K21590 4 PNo.5C",den:7750,st:[{t:40,s:1713},{t:65,s:1713},{t:100,s:1713},{t:125,s:1713},{t:150,s:1713},{t:200,s:1713},{t:250,s:1683},{t:300,s:1642},{t:325,s:1632},{t:350,s:1621},{t:375,s:1611},{t:400,s:1591},{t:425,s:1540},{t:450,s:1448},{t:475,s:1356}]},
+  {spec:"SA-542 C K31830 4a PNo.5C",den:7750,st:[{t:40,s:1713},{t:65,s:1713},{t:100,s:1703},{t:125,s:1672},{t:150,s:1642},{t:200,s:1591},{t:250,s:1570},{t:300,s:1540},{t:325,s:1530},{t:350,s:1519},{t:375,s:1499},{t:400,s:1479},{t:425,s:1468},{t:450,s:1438},{t:475,s:1417},{t:500,s:1387}]},
+  {spec:"SA-542 D K31835 4a PNo.5C",den:7750,st:[{t:40,s:1713},{t:65,s:1713},{t:100,s:1713},{t:125,s:1713},{t:150,s:1713},{t:200,s:1713},{t:250,s:1713},{t:300,s:1683},{t:325,s:1652},{t:350,s:1621},{t:375,s:1601},{t:400,s:1560},{t:425,s:1519},{t:450,s:1479},{t:475,s:1438},{t:500,s:1397}]},
+  {spec:"SA-543 B K42339 1 PNo.11A",den:7750,st:[{t:40,s:2111},{t:65,s:2111},{t:100,s:2111},{t:125,s:2111},{t:150,s:2111},{t:200,s:2090},{t:250,s:2080},{t:300,s:2060},{t:325,s:2039},{t:350,s:2009}]},
+  {spec:"SA-543 B K42339 2 PNo.11B",den:7750,st:[{t:40,s:2315},{t:65,s:2315},{t:100,s:2315},{t:125,s:2315},{t:150,s:2315},{t:200,s:2284},{t:250,s:2274},{t:300,s:2254},{t:325,s:2233},{t:350,s:2213}]},
+  {spec:"SA-543 B K42339 3 PNo.3",den:7750,st:[{t:40,s:1805},{t:65,s:1805},{t:100,s:1805},{t:125,s:1805},{t:150,s:1805},{t:200,s:1795},{t:250,s:1784},{t:300,s:1764},{t:325,s:1754},{t:350,s:1723}]},
+  {spec:"SA-543 C 1 PNo.11A",den:7750,st:[{t:40,s:2111},{t:65,s:2111},{t:100,s:2111},{t:125,s:2111},{t:150,s:2111},{t:200,s:2090},{t:250,s:2080},{t:300,s:2060},{t:325,s:2039},{t:350,s:2009}]},
+  {spec:"SA-543 C 2 PNo.11B",den:7750,st:[{t:40,s:2315},{t:65,s:2315},{t:100,s:2315},{t:125,s:2315},{t:150,s:2315},{t:200,s:2284},{t:250,s:2274},{t:300,s:2254},{t:325,s:2233},{t:350,s:2213}]},
+  {spec:"SA-543 C 3 PNo.3",den:7750,st:[{t:40,s:1805},{t:65,s:1805},{t:100,s:1805},{t:125,s:1805},{t:150,s:1805},{t:200,s:1795},{t:250,s:1784},{t:300,s:1764},{t:325,s:1754},{t:350,s:1723}]},
+  {spec:"SA-553 I K81340 PNo.11A",den:7750,st:[{t:40,s:2009},{t:65,s:2009},{t:100,s:1856},{t:125,s:1815}]},
+  {spec:"SA-553 I K81340 PNo.11A",den:7750,st:[{t:40,s:1907},{t:65,s:1907},{t:100,s:1764},{t:125,s:1723}]},
+  {spec:"SA-553 II K71340 PNo.11A",den:7750,st:[{t:40,s:1907},{t:65,s:1907},{t:100,s:1764},{t:125,s:1723}]},
+  {spec:"SA-553 II K71340 PNo.11A",den:7750,st:[{t:40,s:2009},{t:65,s:2009},{t:100,s:1856},{t:125,s:1815}]},
+  {spec:"SA-562 K11224 PNo.1",den:7750,st:[{t:40,s:907},{t:65,s:857},{t:100,s:798},{t:125,s:766},{t:150,s:744},{t:200,s:731},{t:250,s:731},{t:300,s:731},{t:325,s:731},{t:350,s:731}]},
+  {spec:"SA-612 K02900 [t <= 13] PNo.10C",den:7750,st:[{t:40,s:1662},{t:65,s:1662},{t:100,s:1662},{t:125,s:1652},{t:150,s:1642},{t:200,s:1632},{t:250,s:1632},{t:300,s:1601},{t:325,s:1570},{t:350,s:1540}]},
+  {spec:"SA-612 K02900 [13 < t <= 25] PNo.10C",den:7750,st:[{t:40,s:1621},{t:65,s:1621},{t:100,s:1621},{t:125,s:1611},{t:150,s:1601},{t:200,s:1591},{t:250,s:1591},{t:300,s:1581},{t:325,s:1581},{t:350,s:1519},{t:375,s:1356}]},
+  {spec:"SA-612 K02900 [13 < t <= 25] PNo.10C",den:7750,st:[{t:40,s:1621},{t:65,s:1621},{t:100,s:1621},{t:125,s:1611},{t:150,s:1601},{t:200,s:1591},{t:250,s:1591},{t:300,s:1581},{t:325,s:1581},{t:350,s:1519}]},
+  {spec:"SA-645 K41583 PNo.11A",den:7750,st:[{t:40,s:1907},{t:65,s:1907},{t:100,s:1897},{t:125,s:1866}]},
+  {spec:"SA-662 A K01701 PNo.1",den:7750,st:[{t:40,s:1162},{t:65,s:1162},{t:100,s:1162},{t:125,s:1162},{t:150,s:1162},{t:200,s:1162},{t:250,s:1162},{t:300,s:1162},{t:325,s:1162},{t:350,s:1162},{t:375,s:1071}]},
+  {spec:"SA-662 B K02203 PNo.1",den:7750,st:[{t:40,s:1305},{t:65,s:1305},{t:100,s:1305},{t:125,s:1305},{t:150,s:1305},{t:200,s:1305},{t:250,s:1305},{t:300,s:1305},{t:325,s:1305},{t:350,s:1295},{t:375,s:1162}]},
+  {spec:"SA-662 C K02007 PNo.1",den:7750,st:[{t:40,s:1407},{t:65,s:1407},{t:100,s:1407},{t:125,s:1407},{t:150,s:1407},{t:200,s:1407},{t:250,s:1407},{t:300,s:1407},{t:325,s:1407},{t:350,s:1397},{t:375,s:1254}]},
+  {spec:"SA-666 201-1 S20100 PNo.8",den:7810,st:[{t:40,s:1774},{t:65,s:1550},{t:100,s:1326},{t:125,s:1234},{t:150,s:1162}]},
+  {spec:"SA-666 201-2 S20100 PNo.8",den:7810,st:[{t:40,s:1907},{t:65,s:1744},{t:100,s:1570},{t:125,s:1479},{t:150,s:1377}]},
+  {spec:"SA-666 XM-11 S21904 PNo.8",den:7810,st:[{t:40,s:1805},{t:65,s:1805},{t:100,s:1805},{t:125,s:1754},{t:150,s:1683},{t:200,s:1611},{t:250,s:1560},{t:300,s:1519},{t:325,s:1509}]},
+  {spec:"SA-666 XM-11 S21904 PNo.8",den:7810,st:[{t:40,s:1805},{t:65,s:1805},{t:100,s:1795},{t:125,s:1683},{t:150,s:1540},{t:200,s:1387},{t:250,s:1285},{t:300,s:1224},{t:325,s:1193}]},
+  {spec:"SA-693 630 S17400 H1075",den:7750,st:[{t:40,s:2906},{t:65,s:2906},{t:100,s:2906},{t:125,s:2906},{t:150,s:2906},{t:200,s:2845},{t:250,s:2784},{t:300,s:2753},{t:325,s:2723},{t:350,s:2702}]},
+  {spec:"SA-693 630 S17400 H1100",den:7750,st:[{t:40,s:2814},{t:65,s:2814},{t:100,s:2814},{t:125,s:2814},{t:150,s:2814},{t:200,s:2743},{t:250,s:2682},{t:300,s:2651},{t:325,s:2631},{t:350,s:2610}]},
+  {spec:"SA-693 630 S17400 H1150",den:7750,st:[{t:40,s:2712},{t:65,s:2712},{t:100,s:2712},{t:125,s:2712},{t:150,s:2712},{t:200,s:2641},{t:250,s:2590},{t:300,s:2559},{t:325,s:2539},{t:350,s:2519}]},
+  {spec:"SA-724 A K11831 PNo.1",den:7750,st:[{t:40,s:1805},{t:65,s:1805},{t:100,s:1805},{t:125,s:1795},{t:150,s:1784},{t:200,s:1764},{t:250,s:1764},{t:300,s:1764},{t:325,s:1764},{t:350,s:1683},{t:375,s:1509}]},
+  {spec:"SA-724 B K12031 PNo.1",den:7750,st:[{t:40,s:1907},{t:65,s:1907},{t:100,s:1907},{t:125,s:1897},{t:150,s:1886},{t:200,s:1866},{t:250,s:1866},{t:300,s:1866},{t:325,s:1825},{t:350,s:1683},{t:375,s:1611}]},
+  {spec:"SA-724 C K12037 PNo.1",den:7750,st:[{t:40,s:1805},{t:65,s:1805},{t:100,s:1805},{t:125,s:1795},{t:150,s:1784},{t:200,s:1764},{t:250,s:1764},{t:300,s:1764},{t:325,s:1764},{t:350,s:1683},{t:375,s:1509}]},
+  {spec:"SA-737 B K12001 PNo.1",den:7750,st:[{t:40,s:1407},{t:65,s:1407},{t:100,s:1407},{t:125,s:1407},{t:150,s:1407},{t:200,s:1407},{t:250,s:1407},{t:300,s:1407},{t:325,s:1407},{t:350,s:1407},{t:375,s:1377}]},
+  {spec:"SA-737 C K12202 PNo.1",den:7750,st:[{t:40,s:1611},{t:65,s:1611},{t:100,s:1611},{t:125,s:1611},{t:150,s:1611},{t:200,s:1611},{t:250,s:1611},{t:300,s:1611},{t:325,s:1611},{t:350,s:1581},{t:375,s:1377}]},
+  {spec:"SA-738 A K12447 PNo.1",den:7750,st:[{t:40,s:1509},{t:65,s:1509},{t:100,s:1509},{t:125,s:1509},{t:150,s:1509},{t:200,s:1509},{t:250,s:1509},{t:300,s:1509},{t:325,s:1509},{t:350,s:1489},{t:375,s:1346}]},
+  {spec:"SA-738 B K12447 PNo.1",den:7750,st:[{t:40,s:1713},{t:65,s:1713},{t:100,s:1713},{t:125,s:1713},{t:150,s:1713},{t:200,s:1713},{t:250,s:1713},{t:300,s:1703},{t:325,s:1683},{t:350,s:1662}]},
+  {spec:"SA-738 C [t <= 64] PNo.1",den:7750,st:[{t:40,s:1611},{t:65,s:1611},{t:100,s:1611},{t:125,s:1601},{t:150,s:1591},{t:200,s:1570},{t:250,s:1570},{t:300,s:1570},{t:325,s:1570},{t:350,s:1540}]},
+  {spec:"SA-738 C [100 < t <= 150] PNo.1",den:7750,st:[{t:40,s:1407},{t:65,s:1407},{t:100,s:1407},{t:125,s:1397},{t:150,s:1387},{t:200,s:1366},{t:250,s:1366},{t:300,s:1366},{t:325,s:1366},{t:350,s:1356}]},
+  {spec:"SA-738 C [64 < t <= 100] PNo.1",den:7750,st:[{t:40,s:1509},{t:65,s:1509},{t:100,s:1499},{t:125,s:1499},{t:150,s:1479},{t:200,s:1468},{t:250,s:1468},{t:300,s:1468},{t:325,s:1468},{t:350,s:1458}]},
+  {spec:"SA-832 21V K31830 PNo.5C",den:7750,st:[{t:40,s:1713},{t:65,s:1713},{t:100,s:1703},{t:125,s:1672},{t:150,s:1642},{t:200,s:1591},{t:250,s:1570},{t:300,s:1540},{t:325,s:1530},{t:350,s:1519},{t:375,s:1499},{t:400,s:1479},{t:425,s:1468},{t:450,s:1438},{t:475,s:1417},{t:500,s:1387}]},
+  {spec:"SA-832 22V K31835 PNo.5C",den:7750,st:[{t:40,s:1713},{t:65,s:1713},{t:100,s:1713},{t:125,s:1713},{t:150,s:1713},{t:200,s:1713},{t:250,s:1713},{t:300,s:1683},{t:325,s:1652},{t:350,s:1621},{t:375,s:1601},{t:400,s:1560},{t:425,s:1519},{t:450,s:1479},{t:475,s:1438},{t:500,s:1397}]}
+  ],
+  "Non-Ferrous": [
+  {spec:"SB-127 N04400 Annealed PNo.42",den:8860,st:[{t:40,s:1315},{t:65,s:1234},{t:100,s:1142},{t:125,s:1101},{t:150,s:1071},{t:175,s:1050},{t:200,s:1030},{t:225,s:1030},{t:250,s:1030},{t:275,s:1030},{t:300,s:1030},{t:325,s:1030},{t:350,s:1030},{t:375,s:1030},{t:400,s:1020},{t:425,s:1013},{t:450,s:815},{t:475,s:614},{t:500,s:429}]},
+  {spec:"SB-127 N04400 As rolled PNo.42",den:8860,st:[{t:40,s:1509},{t:65,s:1509},{t:100,s:1509},{t:125,s:1509},{t:150,s:1509},{t:175,s:1509},{t:200,s:1509},{t:225,s:1509},{t:250,s:1509},{t:275,s:1509},{t:300,s:1509},{t:325,s:1509},{t:350,s:1499},{t:375,s:1438},{t:400,s:1295},{t:425,s:1040},{t:450,s:662},{t:475,s:357},{t:500,s:82}]},
+  {spec:"SB-152 C10200 O25 PNo.31",den:8940,st:[{t:40,s:471},{t:65,s:395},{t:100,s:378},{t:125,s:371},{t:150,s:350},{t:175,s:286},{t:200,s:222},{t:225,s:159}]},
+  {spec:"SB-152 C10400 O25 PNo.31",den:8940,st:[{t:40,s:471},{t:65,s:395},{t:100,s:378},{t:125,s:371},{t:150,s:350},{t:175,s:286},{t:200,s:222},{t:225,s:159}]},
+  {spec:"SB-152 C10500 O25 PNo.31",den:8940,st:[{t:40,s:471},{t:65,s:395},{t:100,s:378},{t:125,s:371},{t:150,s:350},{t:175,s:286},{t:200,s:222},{t:225,s:159}]},
+  {spec:"SB-152 C10700 O25 PNo.31",den:8940,st:[{t:40,s:471},{t:65,s:395},{t:100,s:378},{t:125,s:371},{t:150,s:350},{t:175,s:286},{t:200,s:222},{t:225,s:159}]},
+  {spec:"SB-152 C12200 O25 PNo.31",den:8940,st:[{t:40,s:471},{t:65,s:395},{t:100,s:378},{t:125,s:371},{t:150,s:350},{t:175,s:286},{t:200,s:222},{t:225,s:159}]},
+  {spec:"SB-152 C12300 O25 PNo.31",den:8940,st:[{t:40,s:471},{t:65,s:395},{t:100,s:378},{t:125,s:371},{t:150,s:350},{t:175,s:286},{t:200,s:222},{t:225,s:159}]},
+  {spec:"SB-152 C14200 O25 PNo.31",den:8940,st:[{t:40,s:471},{t:65,s:395},{t:100,s:378},{t:125,s:371},{t:150,s:350}]},
+  {spec:"SB-152 C11000 O25 [t <= 50] PNo.31",den:8890,st:[{t:40,s:471},{t:65,s:395},{t:100,s:378},{t:125,s:371},{t:150,s:350},{t:175,s:286},{t:200,s:222},{t:225,s:159}]},
+  {spec:"SB-152 C12500 O25 [t <= 50] PNo.31",den:8940,st:[{t:40,s:471},{t:65,s:395},{t:100,s:378},{t:125,s:371},{t:150,s:350}]},
+  {spec:"SB-162 N02200 Annealed PNo.41",den:8890,st:[{t:40,s:703},{t:65,s:703},{t:100,s:703},{t:125,s:703},{t:150,s:703},{t:175,s:703},{t:200,s:703},{t:225,s:703},{t:250,s:703},{t:275,s:703},{t:300,s:703},{t:325,s:703}]},
+  {spec:"SB-162 N02200 As rolled PNo.41",den:8890,st:[{t:40,s:935},{t:65,s:935},{t:100,s:935},{t:125,s:935},{t:150,s:935},{t:175,s:935},{t:200,s:935},{t:225,s:925},{t:250,s:898},{t:275,s:866},{t:300,s:830},{t:325,s:795}]},
+  {spec:"SB-162 N02201 Hot rolled/ann. PNo.41",den:8890,st:[{t:40,s:563},{t:65,s:552},{t:100,s:538},{t:125,s:531},{t:150,s:527},{t:175,s:527},{t:200,s:527},{t:225,s:527},{t:250,s:527},{t:275,s:527},{t:300,s:527},{t:325,s:527},{t:350,s:526},{t:375,s:520},{t:400,s:520},{t:425,s:510},{t:450,s:426},{t:475,s:337},{t:500,s:278},{t:525,s:234},{t:550,s:191},{t:575,s:159},{t:600,s:133},{t:625,s:102},{t:650,s:84}]},
+  {spec:"SB-168 N06600 Annealed PNo.43",den:8410,st:[{t:40,s:1611},{t:65,s:1611},{t:100,s:1611},{t:125,s:1611},{t:150,s:1611},{t:175,s:1611},{t:200,s:1611},{t:225,s:1611},{t:250,s:1611},{t:275,s:1611},{t:300,s:1611},{t:325,s:1611},{t:350,s:1611},{t:375,s:1611},{t:400,s:1611},{t:425,s:1611},{t:450,s:1591},{t:475,s:1264},{t:500,s:882},{t:525,s:599},{t:550,s:408},{t:575,s:273},{t:600,s:194},{t:625,s:151},{t:650,s:141}]},
+  {spec:"SB-168 N06600 Annealed PNo.43",den:8410,st:[{t:40,s:1611},{t:65,s:1550},{t:100,s:1489},{t:125,s:1468},{t:150,s:1458},{t:175,s:1448},{t:200,s:1448},{t:225,s:1438},{t:250,s:1428},{t:275,s:1417},{t:300,s:1407},{t:325,s:1397},{t:350,s:1387},{t:375,s:1377},{t:400,s:1366},{t:425,s:1346},{t:450,s:1326},{t:475,s:1203},{t:500,s:882},{t:525,s:599},{t:550,s:408},{t:575,s:273},{t:600,s:194},{t:625,s:151},{t:650,s:141}]},
+  {spec:"SB-168 N06617 Annealed PNo.43",den:8360,st:[{t:40,s:1642},{t:65,s:1550},{t:100,s:1448},{t:125,s:1387},{t:150,s:1346},{t:175,s:1315},{t:200,s:1275},{t:225,s:1244},{t:250,s:1224},{t:275,s:1193},{t:300,s:1173},{t:325,s:1162},{t:350,s:1152},{t:375,s:1132},{t:400,s:1122},{t:425,s:1122},{t:450,s:1111},{t:475,s:1101},{t:500,s:1101},{t:525,s:1091},{t:550,s:1081},{t:575,s:1081},{t:600,s:1081},{t:625,s:1071},{t:650,s:1071},{t:675,s:1030},{t:700,s:826},{t:725,s:654},{t:750,s:514},{t:775,s:403},{t:800,s:319},{t:825,s:251},{t:850,s:198},{t:875,s:156},{t:900,s:125}]},
+  {spec:"SB-168 N06617 Annealed PNo.43",den:8360,st:[{t:40,s:1642},{t:65,s:1642},{t:100,s:1642},{t:125,s:1642},{t:150,s:1642},{t:175,s:1642},{t:200,s:1642},{t:225,s:1642},{t:250,s:1642},{t:275,s:1632},{t:300,s:1601},{t:325,s:1570},{t:350,s:1550},{t:375,s:1540},{t:400,s:1530},{t:425,s:1509},{t:450,s:1499},{t:475,s:1489},{t:500,s:1479},{t:525,s:1468},{t:550,s:1468},{t:575,s:1468},{t:600,s:1458},{t:625,s:1448},{t:650,s:1264},{t:675,s:1030},{t:700,s:826},{t:725,s:654},{t:750,s:514},{t:775,s:403},{t:800,s:319},{t:825,s:251},{t:850,s:198},{t:875,s:156},{t:900,s:125}]},
+  {spec:"SB-168 N06690 Annealed PNo.43",den:8110,st:[{t:40,s:1642},{t:65,s:1560},{t:100,s:1468},{t:125,s:1428},{t:150,s:1397},{t:175,s:1366},{t:200,s:1346},{t:225,s:1326},{t:250,s:1315},{t:275,s:1305},{t:300,s:1295},{t:325,s:1295},{t:350,s:1295},{t:375,s:1295},{t:400,s:1295},{t:425,s:1295},{t:450,s:1295},{t:475,s:1295}]},
+  {spec:"SB-168 N06690 Annealed PNo.43",den:8110,st:[{t:40,s:1642},{t:65,s:1642},{t:100,s:1642},{t:125,s:1642},{t:150,s:1642},{t:175,s:1642},{t:200,s:1642},{t:225,s:1632},{t:250,s:1632},{t:275,s:1621},{t:300,s:1611},{t:325,s:1611},{t:350,s:1611},{t:375,s:1601},{t:400,s:1591},{t:425,s:1591},{t:450,s:1581},{t:475,s:1581}]},
+  {spec:"SB-168 N06600 Hot rolled PNo.43",den:8410,st:[{t:40,s:1642},{t:65,s:1591},{t:100,s:1550},{t:125,s:1530},{t:150,s:1509},{t:175,s:1499},{t:200,s:1499},{t:225,s:1499},{t:250,s:1499},{t:275,s:1499},{t:300,s:1489},{t:325,s:1489},{t:350,s:1479},{t:375,s:1479},{t:400,s:1458},{t:425,s:1438},{t:450,s:1417},{t:475,s:1397},{t:500,s:1366},{t:525,s:1203},{t:550,s:873},{t:575,s:641},{t:600,s:471},{t:625,s:402},{t:650,s:386}]},
+  {spec:"SB-168 N06600 Hot rolled PNo.43",den:8410,st:[{t:40,s:1642},{t:65,s:1642},{t:100,s:1642},{t:125,s:1642},{t:150,s:1642},{t:175,s:1642},{t:200,s:1642},{t:225,s:1642},{t:250,s:1642},{t:275,s:1642},{t:300,s:1642},{t:325,s:1642},{t:350,s:1642},{t:375,s:1642},{t:400,s:1642},{t:425,s:1642},{t:450,s:1642},{t:475,s:1642},{t:500,s:1540},{t:525,s:1213},{t:550,s:873},{t:575,s:641},{t:600,s:471},{t:625,s:402},{t:650,s:386}]},
+  {spec:"SB-168 N06045 Solution ann. PNo.46",den:8000,st:[{t:40,s:1642},{t:65,s:1642},{t:100,s:1642},{t:125,s:1642},{t:150,s:1642},{t:175,s:1642},{t:200,s:1642},{t:225,s:1632},{t:250,s:1601},{t:275,s:1581},{t:300,s:1560},{t:325,s:1550},{t:350,s:1540},{t:375,s:1519},{t:400,s:1519},{t:425,s:1509},{t:450,s:1489},{t:475,s:1234},{t:500,s:1000},{t:525,s:776},{t:550,s:579},{t:575,s:460},{t:600,s:372},{t:625,s:299},{t:650,s:244},{t:675,s:200},{t:700,s:160},{t:725,s:134},{t:750,s:108},{t:775,s:86},{t:800,s:69},{t:825,s:54}]},
+  {spec:"SB-168 N06045 Solution ann. PNo.46",den:8000,st:[{t:40,s:1642},{t:65,s:1550},{t:100,s:1448},{t:125,s:1397},{t:150,s:1356},{t:175,s:1315},{t:200,s:1275},{t:225,s:1254},{t:250,s:1234},{t:275,s:1213},{t:300,s:1203},{t:325,s:1193},{t:350,s:1183},{t:375,s:1183},{t:400,s:1173},{t:425,s:1173},{t:450,s:1162},{t:475,s:1152},{t:500,s:1000},{t:525,s:776},{t:550,s:579},{t:575,s:460},{t:600,s:372},{t:625,s:299},{t:650,s:244},{t:675,s:200},{t:700,s:160},{t:725,s:134},{t:750,s:108},{t:775,s:86},{t:800,s:69},{t:825,s:54}]},
+  {spec:"SB-169 C61400 O25 or O60 [t <= 13] PNo.35",den:7890,st:[{t:40,s:1448},{t:65,s:1448},{t:100,s:1448},{t:125,s:1448},{t:150,s:1448},{t:175,s:1448},{t:200,s:1428},{t:225,s:1377},{t:250,s:1336},{t:275,s:1295}]},
+  {spec:"SB-169 C61400 O25 or O60 [13 < t <= 50] PNo.35",den:7890,st:[{t:40,s:1407},{t:65,s:1397},{t:100,s:1387},{t:125,s:1387},{t:150,s:1366},{t:175,s:1366},{t:200,s:1356},{t:225,s:1336},{t:250,s:1305},{t:275,s:1264}]},
+  {spec:"SB-169 C61400 O25 or O60 [50 < t <= 125] PNo.35",den:7890,st:[{t:40,s:1305},{t:65,s:1305},{t:100,s:1295},{t:125,s:1285},{t:150,s:1275},{t:175,s:1275},{t:200,s:1264},{t:225,s:1234},{t:250,s:1203},{t:275,s:1173}]},
+  {spec:"SB-171 C70600 O25 PNo.34",den:8940,st:[{t:40,s:703},{t:65,s:686},{t:100,s:664},{t:125,s:646},{t:150,s:632},{t:175,s:622},{t:200,s:613},{t:225,s:604}]},
+  {spec:"SB-171 C70600 O25 PNo.34",den:8940,st:[{t:40,s:703},{t:65,s:682},{t:100,s:665},{t:125,s:652},{t:150,s:632},{t:175,s:619},{t:200,s:613},{t:225,s:603},{t:250,s:579},{t:275,s:527},{t:300,s:461},{t:325,s:398}]},
+  {spec:"SB-171 C44300 O25 [t <= 100] PNo.32",den:8520,st:[{t:40,s:703},{t:65,s:703},{t:100,s:703},{t:125,s:703},{t:150,s:703},{t:175,s:696},{t:200,s:300},{t:225,s:167},{t:250,s:93}]},
+  {spec:"SB-171 C44400 O25 [t <= 100] PNo.32",den:8520,st:[{t:40,s:703},{t:65,s:703},{t:100,s:703},{t:125,s:703},{t:150,s:703},{t:175,s:696},{t:200,s:300},{t:225,s:167},{t:250,s:93}]},
+  {spec:"SB-171 C44500 O25 [t <= 100] PNo.32",den:8520,st:[{t:40,s:703},{t:65,s:703},{t:100,s:703},{t:125,s:703},{t:150,s:703},{t:175,s:696},{t:200,s:300},{t:225,s:167},{t:250,s:93}]},
+  {spec:"SB-171 C36500 O25 [t <= 50] PNo.32",den:8420,st:[{t:40,s:935},{t:65,s:935},{t:100,s:935},{t:125,s:935},{t:150,s:934},{t:175,s:778},{t:200,s:431},{t:225,s:179}]},
+  {spec:"SB-171 C61400 O25 [t <= 50] PNo.35",den:7890,st:[{t:40,s:1407},{t:65,s:1397},{t:100,s:1387},{t:125,s:1387},{t:150,s:1366},{t:175,s:1366},{t:200,s:1356},{t:225,s:1336},{t:250,s:1305},{t:275,s:1264}]},
+  {spec:"SB-171 C63000 O25 [t <= 50] PNo.35",den:7580,st:[{t:40,s:1683},{t:65,s:1672},{t:100,s:1652},{t:125,s:1632},{t:150,s:1611},{t:175,s:1601},{t:200,s:1591},{t:225,s:1560},{t:250,s:1540},{t:275,s:1305},{t:300,s:986},{t:325,s:759},{t:350,s:557},{t:375,s:397}]},
+  {spec:"SB-171 C70600 O25 [t <= 64] PNo.34",den:8940,st:[{t:40,s:703},{t:65,s:682},{t:100,s:665},{t:125,s:652},{t:150,s:632},{t:175,s:619},{t:200,s:613},{t:225,s:603},{t:250,s:579}]},
+  {spec:"SB-171 C71500 O25 [t <= 64] PNo.34",den:8940,st:[{t:40,s:935},{t:65,s:908},{t:100,s:881},{t:125,s:862},{t:150,s:842},{t:175,s:824},{t:200,s:811},{t:225,s:792},{t:250,s:778},{t:275,s:766},{t:300,s:756},{t:325,s:750},{t:350,s:742},{t:375,s:729}]},
+  {spec:"SB-171 C46400 O25 [t <= 75] PNo.32",den:8420,st:[{t:40,s:935},{t:65,s:935},{t:100,s:935},{t:125,s:935},{t:150,s:928},{t:175,s:473},{t:200,s:207}]},
+  {spec:"SB-171 C46500 O25 [t <= 75] PNo.32",den:8420,st:[{t:40,s:935},{t:65,s:935},{t:100,s:935},{t:125,s:935},{t:150,s:928},{t:175,s:473},{t:200,s:207}]},
+  {spec:"SB-171 C61400 O25 [50 < t <= 125] PNo.35",den:7890,st:[{t:40,s:1305},{t:65,s:1305},{t:100,s:1295},{t:125,s:1285},{t:150,s:1275},{t:175,s:1275},{t:200,s:1264},{t:225,s:1234},{t:250,s:1203},{t:275,s:1173}]},
+  {spec:"SB-171 C36500 O25 [50 < t <= 89] PNo.32",den:8420,st:[{t:40,s:703},{t:65,s:703},{t:100,s:703},{t:125,s:703},{t:150,s:703},{t:175,s:703},{t:200,s:438},{t:225,s:119}]},
+  {spec:"SB-171 C63000 O25 [50 < t <= 89] PNo.35",den:7580,st:[{t:40,s:1550},{t:65,s:1530},{t:100,s:1509},{t:125,s:1489},{t:150,s:1479},{t:175,s:1468},{t:200,s:1458},{t:225,s:1428},{t:250,s:1397},{t:275,s:1254},{t:300,s:998},{t:325,s:756},{t:350,s:558},{t:375,s:397}]},
+  {spec:"SB-171 C71500 O25 [64 < t <= 125] PNo.34",den:8940,st:[{t:40,s:843},{t:65,s:816},{t:100,s:789},{t:125,s:771},{t:150,s:759},{t:175,s:739},{t:200,s:726},{t:225,s:714},{t:250,s:701},{t:275,s:692},{t:300,s:683},{t:325,s:672},{t:350,s:667},{t:375,s:660}]},
+  {spec:"SB-171 C46400 O25 [75 < t <= 125] PNo.32",den:8420,st:[{t:40,s:843},{t:65,s:843},{t:100,s:843},{t:125,s:843},{t:150,s:838},{t:175,s:469},{t:200,s:210}]},
+  {spec:"SB-171 C46500 O25 [75 < t <= 125] PNo.32",den:8420,st:[{t:40,s:843},{t:65,s:843},{t:100,s:843},{t:125,s:843},{t:150,s:838},{t:175,s:469},{t:200,s:210}]},
+  {spec:"SB-171 C36500 O25 [89 < t <= 125] PNo.32",den:8420,st:[{t:40,s:563},{t:65,s:563},{t:100,s:563},{t:125,s:563},{t:150,s:563},{t:175,s:563},{t:200,s:411},{t:225,s:227}]},
+  {spec:"SB-171 C63000 O25 [89 < t <= 125] PNo.35",den:7580,st:[{t:40,s:1407},{t:65,s:1397},{t:100,s:1377},{t:125,s:1356},{t:150,s:1346},{t:175,s:1336},{t:200,s:1326},{t:225,s:1305},{t:250,s:1264},{t:275,s:1193},{t:300,s:1013},{t:325,s:753},{t:350,s:558},{t:375,s:397}]},
+  {spec:"SB-209 A91060 H112 [12.70 - 25.40] PNo.21",den:2705,st:[{t:40,s:204},{t:65,s:191},{t:100,s:148},{t:125,s:132},{t:150,s:119},{t:175,s:100},{t:200,s:75},{t:225,s:49}]},
+  {spec:"SB-209 A95086 H112 [12.70 - 25.40] PNo.25",den:2660,st:[{t:40,s:703},{t:65,s:703}]},
+  {spec:"SB-209 Alclad 3003 H112 [12.70 - 50.80] PNo.21",den:2730,st:[{t:40,s:274},{t:65,s:274},{t:100,s:266},{t:125,s:201},{t:150,s:153},{t:175,s:114},{t:200,s:94},{t:225,s:76}]},
+  {spec:"SB-209 A91100 H112 [12.70 - 50.80] PNo.21",den:2710,st:[{t:40,s:232},{t:65,s:232},{t:100,s:223},{t:125,s:170},{t:150,s:154},{t:175,s:122},{t:200,s:78},{t:225,s:34}]},
+  {spec:"SB-209 A93003 H112 [12.70 - 50.80] PNo.21",den:2730,st:[{t:40,s:267},{t:65,s:267},{t:100,s:255},{t:125,s:217},{t:150,s:166},{t:175,s:128},{t:200,s:103},{t:225,s:78}]},
+  {spec:"SB-209 Alclad 3004 H112 [12.70 - 76.20] PNo.22",den:2720,st:[{t:40,s:415},{t:65,s:415},{t:100,s:409},{t:125,s:366},{t:150,s:321},{t:175,s:245},{t:200,s:162},{t:225,s:80}]},
+  {spec:"SB-209 A95052 H112 [12.70 - 76.20] PNo.22",den:2680,st:[{t:40,s:443},{t:65,s:443},{t:100,s:443},{t:125,s:443},{t:150,s:418},{t:175,s:297},{t:200,s:187},{t:225,s:81}]},
+  {spec:"SB-209 A95154 H112 [12.70 - 76.20] PNo.22",den:2660,st:[{t:40,s:513},{t:65,s:513}]},
+  {spec:"SB-209 A95254 H112 [12.70 - 76.20] PNo.22",den:2660,st:[{t:40,s:513},{t:65,s:513}]},
+  {spec:"SB-209 A95454 H112 [12.70 - 76.20] PNo.22",den:2690,st:[{t:40,s:563},{t:65,s:563},{t:100,s:555},{t:125,s:516},{t:150,s:381},{t:175,s:293},{t:200,s:223},{t:225,s:154}]},
+  {spec:"SB-209 A95652 H112 [12.70 - 76.20] PNo.22",den:2670,st:[{t:40,s:443},{t:65,s:443},{t:100,s:443},{t:125,s:442},{t:150,s:426},{t:175,s:298},{t:200,s:186},{t:225,s:82}]},
+  {spec:"SB-209 A95086 H112 [25.41 - 50.80] PNo.25",den:2660,st:[{t:40,s:654},{t:65,s:654}]},
+  {spec:"SB-209 A91060 H112 [25.41 - 76.2] PNo.21",den:2705,st:[{t:40,s:183},{t:65,s:169},{t:100,s:130},{t:125,s:118},{t:150,s:105},{t:175,s:79},{t:200,s:59},{t:225,s:41}]},
+  {spec:"SB-209 A95083 H112 [38.11 - 76.20] PNo.25",den:2660,st:[{t:40,s:780},{t:65,s:780}]},
+  {spec:"SB-209 A95456 H112 [38.11 - 76.20] PNo.25",den:2660,st:[{t:40,s:823},{t:65,s:823}]},
+  {spec:"SB-209 A95086 H112 [4.78 - 12.69] PNo.25",den:2660,st:[{t:40,s:724},{t:65,s:724}]},
+  {spec:"SB-209 Alclad 3003 H112 [50.81 - 76.2] PNo.21",den:2730,st:[{t:40,s:267},{t:65,s:267},{t:100,s:252},{t:125,s:196},{t:150,s:153},{t:175,s:114},{t:200,s:94},{t:225,s:76}]},
+  {spec:"SB-209 A91100 H112 [50.81 - 76.2] PNo.21",den:2710,st:[{t:40,s:190},{t:65,s:190},{t:100,s:185},{t:125,s:164},{t:150,s:125},{t:175,s:100},{t:200,s:75},{t:225,s:49}]},
+  {spec:"SB-209 A93003 H112 [50.81 - 76.2] PNo.21",den:2730,st:[{t:40,s:253},{t:65,s:253},{t:100,s:244},{t:125,s:218},{t:150,s:166},{t:175,s:128},{t:200,s:103},{t:225,s:78}]},
+  {spec:"SB-209 A95086 H112 [50.81 - 76.2] PNo.25",den:2660,st:[{t:40,s:654},{t:65,s:654}]},
+  {spec:"SB-209 Alclad 3003 H112 [6.35 - 12.69] PNo.21",den:2730,st:[{t:40,s:302},{t:65,s:302},{t:100,s:298},{t:125,s:262},{t:150,s:230},{t:175,s:193},{t:200,s:154},{t:225,s:116}]},
+  {spec:"SB-209 Alclad 3004 H112 [6.35 - 12.69] PNo.22",den:2720,st:[{t:40,s:366},{t:65,s:366},{t:100,s:366},{t:125,s:363},{t:150,s:320},{t:175,s:245},{t:200,s:162},{t:225,s:80}]},
+  {spec:"SB-209 A91060 H112 [6.35 - 12.69] PNo.21",den:2705,st:[{t:40,s:225},{t:65,s:211},{t:100,s:162},{t:125,s:145},{t:150,s:126},{t:175,s:114},{t:200,s:78},{t:225,s:39}]},
+  {spec:"SB-209 A91100 H112 [6.35 - 12.69] PNo.21",den:2710,st:[{t:40,s:260},{t:65,s:260},{t:100,s:250},{t:125,s:184},{t:150,s:167},{t:175,s:123},{t:200,s:78},{t:225,s:34}]},
+  {spec:"SB-209 A93003 H112 [6.35 - 12.69] PNo.21",den:2730,st:[{t:40,s:345},{t:65,s:345},{t:100,s:335},{t:125,s:274},{t:150,s:252},{t:175,s:214},{t:200,s:175},{t:225,s:138}]},
+  {spec:"SB-209 A95052 H112 [6.35 - 12.69] PNo.22",den:2680,st:[{t:40,s:563},{t:65,s:563},{t:100,s:553},{t:125,s:484},{t:150,s:431},{t:175,s:298},{t:200,s:187},{t:225,s:81}]},
+  {spec:"SB-209 A95154 H112 [6.35 - 12.69] PNo.22",den:2660,st:[{t:40,s:639},{t:65,s:639}]},
+  {spec:"SB-209 A95254 H112 [6.35 - 12.69] PNo.22",den:2660,st:[{t:40,s:639},{t:65,s:639}]},
+  {spec:"SB-209 A95454 H112 [6.35 - 12.69] PNo.22",den:2690,st:[{t:40,s:639},{t:65,s:639},{t:100,s:627},{t:125,s:506},{t:150,s:382},{t:175,s:294},{t:200,s:223},{t:225,s:154}]},
+  {spec:"SB-209 A95652 H112 [6.35 - 12.69] PNo.22",den:2670,st:[{t:40,s:563},{t:65,s:563},{t:100,s:560},{t:125,s:517},{t:150,s:423},{t:175,s:297},{t:200,s:187},{t:225,s:81}]},
+  {spec:"SB-209 A95083 H112 [6.35 - 38.10] PNo.25",den:2660,st:[{t:40,s:801},{t:65,s:801}]},
+  {spec:"SB-209 A95456 H112 [6.35 - 38.10] PNo.25",den:2660,st:[{t:40,s:843},{t:65,s:843}]},
+  {spec:"SB-209 A93004 H112 [6.35 - 76.2] PNo.22",den:2720,st:[{t:40,s:422},{t:65,s:422},{t:100,s:420},{t:125,s:404},{t:150,s:356},{t:175,s:273},{t:200,s:185},{t:225,s:96}]},
+  {spec:"SB-209 A95086 H116 [1.60 - 50.8] PNo.25",den:2660,st:[{t:40,s:801},{t:65,s:801}]},
+  {spec:"SB-209 Alclad 3003 H12 [0.43 - 12.69] PNo.21",den:2730,st:[{t:40,s:302},{t:65,s:302},{t:100,s:298},{t:125,s:262},{t:150,s:230},{t:175,s:193},{t:200,s:154},{t:225,s:116}]},
+  {spec:"SB-209 A93003 H12 [0.43 - 50.8] PNo.21",den:2730,st:[{t:40,s:345},{t:65,s:345},{t:100,s:335},{t:125,s:274},{t:150,s:252},{t:175,s:214},{t:200,s:175},{t:225,s:138}]},
+  {spec:"SB-209 A91060 H12 [1.30 - 50.8] PNo.21",den:2705,st:[{t:40,s:225},{t:65,s:225},{t:100,s:174},{t:125,s:160},{t:150,s:147},{t:175,s:128},{t:200,s:86},{t:225,s:40}]},
+  {spec:"SB-209 A91100 H12 [1.30 - 50.8] PNo.21",den:2710,st:[{t:40,s:281},{t:65,s:281},{t:100,s:273},{t:125,s:219},{t:150,s:196},{t:175,s:145},{t:200,s:93},{t:225,s:43}]},
+  {spec:"SB-209 Alclad 3003 H12 [12.70 - 50.80] PNo.21",den:2730,st:[{t:40,s:302},{t:65,s:302},{t:100,s:298},{t:125,s:262},{t:150,s:230},{t:175,s:193},{t:200,s:154},{t:225,s:116}]},
+  {spec:"SB-209 Alclad 3003 H14 [0.23 - 12.69] PNo.21",den:2730,st:[{t:40,s:359},{t:65,s:359},{t:100,s:353},{t:125,s:311},{t:150,s:271},{t:175,s:194},{t:200,s:153},{t:225,s:117}]},
+  {spec:"SB-209 A91100 H14 [0.23 - 25.4] PNo.21",den:2710,st:[{t:40,s:323},{t:65,s:323},{t:100,s:315},{t:125,s:250},{t:150,s:195},{t:175,s:144},{t:200,s:93},{t:225,s:43}]},
+  {spec:"SB-209 A93003 H14 [0.23 - 25.4] PNo.21",den:2730,st:[{t:40,s:401},{t:65,s:401},{t:100,s:393},{t:125,s:338},{t:150,s:300},{t:175,s:215},{t:200,s:173},{t:225,s:139}]},
+  {spec:"SB-209 A91060 H14 [1.30 - 25.4] PNo.21",den:2705,st:[{t:40,s:239},{t:65,s:239},{t:100,s:236},{t:125,s:207},{t:150,s:182},{t:175,s:130},{t:200,s:91},{t:225,s:54}]},
+  {spec:"SB-209 Alclad 3003 H14 [12.70 - 25.40] PNo.21",den:2730,st:[{t:40,s:359},{t:65,s:359},{t:100,s:353},{t:125,s:311},{t:150,s:271},{t:175,s:194},{t:200,s:153},{t:225,s:117}]},
+  {spec:"SB-209 Alclad 3004 H32 [1.30 - 12.69] PNo.22",den:2720,st:[{t:40,s:506},{t:65,s:506},{t:100,s:497},{t:125,s:426},{t:150,s:362},{t:175,s:246},{t:200,s:161},{t:225,s:81}]},
+  {spec:"SB-209 A93004 H32 [1.30 - 50.8] PNo.22",den:2720,st:[{t:40,s:563},{t:65,s:563},{t:100,s:554},{t:125,s:481},{t:150,s:403},{t:175,s:275},{t:200,s:183},{t:225,s:97}]},
+  {spec:"SB-209 A95052 H32 [1.30 - 50.8] PNo.22",den:2680,st:[{t:40,s:626},{t:65,s:626},{t:100,s:613},{t:125,s:513},{t:150,s:431},{t:175,s:297},{t:200,s:187},{t:225,s:81}]},
+  {spec:"SB-209 A95086 H32 [1.30 - 50.8] PNo.25",den:2660,st:[{t:40,s:801},{t:65,s:801}]},
+  {spec:"SB-209 A95154 H32 [1.30 - 50.8] PNo.22",den:2660,st:[{t:40,s:724},{t:65,s:724}]},
+  {spec:"SB-209 A95254 H32 [1.30 - 50.8] PNo.22",den:2660,st:[{t:40,s:724},{t:65,s:724}]},
+  {spec:"SB-209 A95454 H32 [1.30 - 50.8] PNo.22",den:2690,st:[{t:40,s:724},{t:65,s:724},{t:100,s:697},{t:125,s:500},{t:150,s:382},{t:175,s:294},{t:200,s:222},{t:225,s:154}]},
+  {spec:"SB-209 A95652 H32 [1.30 - 50.8] PNo.22",den:2670,st:[{t:40,s:626},{t:65,s:626},{t:100,s:613},{t:125,s:513},{t:150,s:424},{t:175,s:297},{t:200,s:187},{t:225,s:81}]},
+  {spec:"SB-209 Alclad 3004 H32 [12.70 - 50.80] PNo.22",den:2720,st:[{t:40,s:506},{t:65,s:506},{t:100,s:497},{t:125,s:426},{t:150,s:362},{t:175,s:246},{t:200,s:161},{t:225,s:81}]},
+  {spec:"SB-209 A95456 H321 [12.70 - 38.10] PNo.25",den:2660,st:[{t:40,s:886},{t:65,s:886}]},
+  {spec:"SB-209 A95083 H321 [38.11 - 76.20] PNo.25",den:2660,st:[{t:40,s:823},{t:65,s:823}]},
+  {spec:"SB-209 A95456 H321 [38.11 - 76.20] PNo.25",den:2660,st:[{t:40,s:823},{t:65,s:823}]},
+  {spec:"SB-209 A95456 H321 [4.78 - 12.69] PNo.25",den:2660,st:[{t:40,s:921},{t:65,s:921}]},
+  {spec:"SB-209 A95083 H321 [4.78 - 38.10] PNo.25",den:2660,st:[{t:40,s:886},{t:65,s:886}]},
+  {spec:"SB-209 Alclad 3004 H34 [1.30 - 12.69] PNo.22",den:2720,st:[{t:40,s:576},{t:65,s:576},{t:100,s:563},{t:125,s:455},{t:150,s:361},{t:175,s:246},{t:200,s:161},{t:225,s:81}]},
+  {spec:"SB-209 A93004 H34 [1.30 - 25.4] PNo.22",den:2720,st:[{t:40,s:639},{t:65,s:639},{t:100,s:632},{t:125,s:544},{t:150,s:402},{t:175,s:274},{t:200,s:184},{t:225,s:96}]},
+  {spec:"SB-209 A95052 H34 [1.30 - 25.4] PNo.22",den:2680,st:[{t:40,s:682},{t:65,s:682},{t:100,s:674},{t:125,s:577},{t:150,s:429},{t:175,s:296},{t:200,s:188},{t:225,s:81}]},
+  {spec:"SB-209 A95086 H34 [1.30 - 25.4] PNo.25",den:2660,st:[{t:40,s:886},{t:65,s:886}]},
+  {spec:"SB-209 A95154 H34 [1.30 - 25.4] PNo.22",den:2660,st:[{t:40,s:780},{t:65,s:780}]},
+  {spec:"SB-209 A95254 H34 [1.30 - 25.4] PNo.22",den:2660,st:[{t:40,s:780},{t:65,s:780}]},
+  {spec:"SB-209 A95454 H34 [1.30 - 25.4] PNo.22",den:2690,st:[{t:40,s:780},{t:65,s:780},{t:100,s:745},{t:125,s:495},{t:150,s:383},{t:175,s:294},{t:200,s:222},{t:225,s:154}]},
+  {spec:"SB-209 A95652 H34 [1.30 - 25.4] PNo.22",den:2670,st:[{t:40,s:682},{t:65,s:682},{t:100,s:660},{t:125,s:508},{t:150,s:424},{t:175,s:297},{t:200,s:187},{t:225,s:81}]},
+  {spec:"SB-209 Alclad 3004 H34 [12.70 - 25.40] PNo.22",den:2720,st:[{t:40,s:576},{t:65,s:576},{t:100,s:563},{t:125,s:455},{t:150,s:361},{t:175,s:246},{t:200,s:161},{t:225,s:81}]},
+  {spec:"SB-209 Alclad 3003 O [0.15 - 12.69] PNo.21",den:2730,st:[{t:40,s:211},{t:65,s:211},{t:100,s:206},{t:125,s:187},{t:150,s:153},{t:175,s:114},{t:200,s:94},{t:225,s:76}]},
+  {spec:"SB-209 A91100 O [0.15 - 76.2] PNo.21",den:2710,st:[{t:40,s:162},{t:65,s:162},{t:100,s:162},{t:125,s:159},{t:150,s:125},{t:175,s:100},{t:200,s:75},{t:225,s:49}]},
+  {spec:"SB-209 A93003 O [0.15 - 76.2] PNo.21",den:2730,st:[{t:40,s:239},{t:65,s:239},{t:100,s:236},{t:125,s:205},{t:150,s:167},{t:175,s:128},{t:200,s:103},{t:225,s:78}]},
+  {spec:"SB-209 A93004 O [0.15 - 76.2] PNo.22",den:2720,st:[{t:40,s:401},{t:65,s:401},{t:100,s:399},{t:125,s:383},{t:150,s:349},{t:175,s:273},{t:200,s:185},{t:225,s:96}]},
+  {spec:"SB-209 Alclad 3004 O [1.30 - 12.69] PNo.22",den:2720,st:[{t:40,s:352},{t:65,s:352},{t:100,s:352},{t:125,s:350},{t:150,s:314},{t:175,s:245},{t:200,s:162},{t:225,s:80}]},
+  {spec:"SB-209 A95083 O [1.30 - 38.10] PNo.25",den:2660,st:[{t:40,s:801},{t:65,s:801}]},
+  {spec:"SB-209 A95456 O [1.30 - 38.10] PNo.25",den:2660,st:[{t:40,s:843},{t:65,s:843}]},
+  {spec:"SB-209 A95086 O [1.30 - 50.8] PNo.25",den:2660,st:[{t:40,s:654},{t:65,s:654}]},
+  {spec:"SB-209 A91060 O [1.30 - 76.2] PNo.21",den:2705,st:[{t:40,s:119},{t:65,s:119},{t:100,s:111},{t:125,s:104},{t:150,s:91},{t:175,s:78},{t:200,s:60},{t:225,s:40}]},
+  {spec:"SB-209 A95052 O [1.30 - 76.2] PNo.22",den:2680,st:[{t:40,s:443},{t:65,s:443},{t:100,s:443},{t:125,s:441},{t:150,s:391},{t:175,s:296},{t:200,s:188},{t:225,s:80}]},
+  {spec:"SB-209 A95154 O [1.30 - 76.2] PNo.22",den:2660,st:[{t:40,s:513},{t:65,s:513}]},
+  {spec:"SB-209 A95254 O [1.30 - 76.2] PNo.22",den:2660,st:[{t:40,s:513},{t:65,s:513}]},
+  {spec:"SB-209 A95454 O [1.30 - 76.2] PNo.22",den:2690,st:[{t:40,s:563},{t:65,s:563},{t:100,s:555},{t:125,s:516},{t:150,s:381},{t:175,s:293},{t:200,s:223},{t:225,s:154}]},
+  {spec:"SB-209 A95652 O [1.30 - 76.2] PNo.22",den:2670,st:[{t:40,s:443},{t:65,s:443},{t:100,s:443},{t:125,s:442},{t:150,s:426},{t:175,s:298},{t:200,s:186},{t:225,s:82}]},
+  {spec:"SB-209 Alclad 3003 O [12.70 - 76.20] PNo.21",den:2730,st:[{t:40,s:211},{t:65,s:211},{t:100,s:206},{t:125,s:187},{t:150,s:153},{t:175,s:114},{t:200,s:94},{t:225,s:76}]},
+  {spec:"SB-209 Alclad 3004 O [12.70 - 76.20] PNo.22",den:2720,st:[{t:40,s:352},{t:65,s:352},{t:100,s:352},{t:125,s:350},{t:150,s:314},{t:175,s:245},{t:200,s:162},{t:225,s:80}]},
+  {spec:"SB-209 A95083 O [127.01 - 177.80] PNo.25",den:2660,st:[{t:40,s:703},{t:65,s:703}]},
+  {spec:"SB-209 A95456 O [127.01 - 177.80] PNo.25",den:2660,st:[{t:40,s:753},{t:65,s:753}]},
+  {spec:"SB-209 A95083 O [177.81 - 203.2] PNo.25",den:2660,st:[{t:40,s:654},{t:65,s:654}]},
+  {spec:"SB-209 A95456 O [177.81 - 203.2] PNo.25",den:2660,st:[{t:40,s:703},{t:65,s:703}]},
+  {spec:"SB-209 A95083 O [38.11 - 76.20] PNo.25",den:2660,st:[{t:40,s:780},{t:65,s:780}]},
+  {spec:"SB-209 A95456 O [38.11 - 76.20] PNo.25",den:2660,st:[{t:40,s:823},{t:65,s:823}]},
+  {spec:"SB-209 A95083 O [76.21 - 127.00] PNo.25",den:2660,st:[{t:40,s:753},{t:65,s:753}]},
+  {spec:"SB-209 A95456 O [76.21 - 127.00] PNo.25",den:2660,st:[{t:40,s:794},{t:65,s:794}]},
+  {spec:"SB-209 Alclad 6061 T4 [1.30 - 6.34] PNo.23",den:2700,st:[{t:40,s:549},{t:65,s:549},{t:100,s:541},{t:125,s:482},{t:150,s:434},{t:175,s:405},{t:200,s:303},{t:225,s:192}]},
+  {spec:"SB-209 A96061 T4 [1.30 - 6.34] PNo.23",den:2700,st:[{t:40,s:605},{t:65,s:605},{t:100,s:592},{t:125,s:511},{t:150,s:483},{t:175,s:447},{t:200,s:340},{t:225,s:220}]},
+  {spec:"SB-209 Alclad 6061 T4 wld. [1.30 - 6.34] PNo.23",den:2700,st:[{t:40,s:422},{t:65,s:422},{t:100,s:421},{t:125,s:413},{t:150,s:384},{t:175,s:328},{t:200,s:259},{t:225,s:189}]},
+  {spec:"SB-209 A96061 T4 wld. [1.30 - 6.34] PNo.23",den:2700,st:[{t:40,s:422},{t:65,s:422},{t:100,s:421},{t:125,s:413},{t:150,s:384},{t:175,s:328},{t:200,s:259},{t:225,s:189}]},
+  {spec:"SB-209 Alclad 6061 T451 [12.70 - 76.20] PNo.23",den:2700,st:[{t:40,s:549},{t:65,s:549},{t:100,s:541},{t:125,s:482},{t:150,s:434},{t:175,s:405},{t:200,s:303},{t:225,s:192}]},
+  {spec:"SB-209 Alclad 6061 T451 [6.35 - 12.69] PNo.23",den:2700,st:[{t:40,s:549},{t:65,s:549},{t:100,s:541},{t:125,s:482},{t:150,s:434},{t:175,s:405},{t:200,s:303},{t:225,s:192}]},
+  {spec:"SB-209 A96061 T451 [6.35 - 76.2] PNo.23",den:2700,st:[{t:40,s:605},{t:65,s:605},{t:100,s:592},{t:125,s:511},{t:150,s:483},{t:175,s:447},{t:200,s:340},{t:225,s:220}]},
+  {spec:"SB-209 Alclad 6061 T451 wld. [6.35 - 76.2] PNo.23",den:2700,st:[{t:40,s:422},{t:65,s:422},{t:100,s:421},{t:125,s:413},{t:150,s:384},{t:175,s:328},{t:200,s:259},{t:225,s:189}]},
+  {spec:"SB-209 A96061 T451 wld. [6.35 - 76.2] PNo.23",den:2700,st:[{t:40,s:422},{t:65,s:422},{t:100,s:421},{t:125,s:413},{t:150,s:384},{t:175,s:328},{t:200,s:259},{t:225,s:189}]},
+  {spec:"SB-209 Alclad 6061 T6 [1.30 - 6.34] PNo.23",den:2700,st:[{t:40,s:767},{t:65,s:767},{t:100,s:750},{t:125,s:628},{t:150,s:529},{t:175,s:409},{t:200,s:300},{t:225,s:193}]},
+  {spec:"SB-209 A96061 T6 [1.30 - 6.34] PNo.23",den:2700,st:[{t:40,s:843},{t:65,s:843},{t:100,s:823},{t:125,s:677},{t:150,s:586},{t:175,s:452},{t:200,s:335},{t:225,s:223}]},
+  {spec:"SB-209 Alclad 6061 T6 wld. [1.30 - 6.34] PNo.23",den:2700,st:[{t:40,s:422},{t:65,s:422},{t:100,s:421},{t:125,s:413},{t:150,s:384},{t:175,s:328},{t:200,s:259},{t:225,s:189}]},
+  {spec:"SB-209 A96061 T6 wld. [1.30 - 6.34] PNo.23",den:2700,st:[{t:40,s:422},{t:65,s:422},{t:100,s:421},{t:125,s:413},{t:150,s:384},{t:175,s:328},{t:200,s:259},{t:225,s:189}]},
+  {spec:"SB-209 Alclad 6061 T651 [101.61 - 127] PNo.23",den:2700,st:[{t:40,s:724},{t:65,s:724},{t:100,s:708},{t:125,s:589},{t:150,s:517},{t:175,s:409},{t:200,s:300},{t:225,s:193}]},
+  {spec:"SB-209 A96061 T651 [101.61 - 152.4] PNo.23",den:2700,st:[{t:40,s:801},{t:65,s:801},{t:100,s:784},{t:125,s:658},{t:150,s:572},{t:175,s:452},{t:200,s:330},{t:225,s:211}]},
+  {spec:"SB-209 Alclad 6061 T651 [12.70 - 101.60] PNo.23",den:2700,st:[{t:40,s:767},{t:65,s:767},{t:100,s:750},{t:125,s:628},{t:150,s:529},{t:175,s:409},{t:200,s:300},{t:225,s:193}]},
+  {spec:"SB-209 A96061 T651 [6.35 - 101.60] PNo.23",den:2700,st:[{t:40,s:843},{t:65,s:843},{t:100,s:823},{t:125,s:677},{t:150,s:586},{t:175,s:452},{t:200,s:335},{t:225,s:223}]},
+  {spec:"SB-209 Alclad 6061 T651 [6.35 - 12.69] PNo.23",den:2700,st:[{t:40,s:767},{t:65,s:767},{t:100,s:750},{t:125,s:628},{t:150,s:529},{t:175,s:409},{t:200,s:300},{t:225,s:193}]},
+  {spec:"SB-209 Alclad 6061 T651 wld. [6.35 - 127] PNo.23",den:2700,st:[{t:40,s:422},{t:65,s:422},{t:100,s:421},{t:125,s:413},{t:150,s:384},{t:175,s:328},{t:200,s:259},{t:225,s:189}]},
+  {spec:"SB-209 A96061 T651 wld. [6.35 - 152.4] PNo.23",den:2700,st:[{t:40,s:422},{t:65,s:422},{t:100,s:421},{t:125,s:413},{t:150,s:384},{t:175,s:328},{t:200,s:259},{t:225,s:189}]},
+  {spec:"SB-265 1 R50250 Annealed PNo.51",den:4510,st:[{t:40,s:703},{t:65,s:655},{t:100,s:567},{t:125,s:512},{t:150,s:462},{t:175,s:424},{t:200,s:392},{t:225,s:365},{t:250,s:342},{t:275,s:312},{t:300,s:277},{t:325,s:239}]},
+  {spec:"SB-265 2 R50400 Annealed PNo.51",den:4510,st:[{t:40,s:1005},{t:65,s:965},{t:100,s:851},{t:125,s:784},{t:150,s:722},{t:175,s:671},{t:200,s:626},{t:225,s:587},{t:250,s:550},{t:275,s:511},{t:300,s:476},{t:325,s:446}]},
+  {spec:"SB-265 3 R50550 Annealed PNo.52",den:4510,st:[{t:40,s:1305},{t:65,s:1234},{t:100,s:1081},{t:125,s:984},{t:150,s:896},{t:175,s:814},{t:200,s:737},{t:225,s:671},{t:250,s:616},{t:275,s:573},{t:300,s:539},{t:325,s:509}]},
+  {spec:"SB-265 7 R52400 Annealed PNo.51",den:4510,st:[{t:40,s:1005},{t:65,s:965},{t:100,s:851},{t:125,s:784},{t:150,s:722},{t:175,s:671},{t:200,s:626},{t:225,s:587},{t:250,s:550},{t:275,s:511},{t:300,s:476},{t:325,s:446}]},
+  {spec:"SB-265 9 R56320 Annealed PNo.53",den:4480,st:[{t:40,s:1805},{t:65,s:1805},{t:100,s:1713},{t:125,s:1652},{t:150,s:1581},{t:175,s:1509},{t:200,s:1438},{t:225,s:1356},{t:250,s:1295},{t:275,s:1244},{t:300,s:1224},{t:325,s:1203}]},
+  {spec:"SB-265 11 R52250 Annealed PNo.51",den:4510,st:[{t:40,s:703},{t:65,s:655},{t:100,s:567},{t:125,s:512},{t:150,s:462},{t:175,s:424},{t:200,s:392},{t:225,s:365},{t:250,s:342},{t:275,s:312},{t:300,s:277},{t:325,s:239}]},
+  {spec:"SB-265 12 R53400 Annealed PNo.52",den:4510,st:[{t:40,s:1407},{t:65,s:1407},{t:100,s:1285},{t:125,s:1213},{t:150,s:1132},{t:175,s:1071},{t:200,s:1015},{t:225,s:968},{t:250,s:932},{t:275,s:905},{t:300,s:881},{t:325,s:856}]},
+  {spec:"SB-265 16 R52402 Annealed PNo.51",den:4510,st:[{t:40,s:1005},{t:65,s:965},{t:100,s:851},{t:125,s:784},{t:150,s:722},{t:175,s:671},{t:200,s:626},{t:225,s:587},{t:250,s:550},{t:275,s:511},{t:300,s:476},{t:325,s:446}]},
+  {spec:"SB-265 17 R52252 Annealed PNo.51",den:4510,st:[{t:40,s:703},{t:65,s:655},{t:100,s:567},{t:125,s:512},{t:150,s:462},{t:175,s:424},{t:200,s:392},{t:225,s:365},{t:250,s:342},{t:275,s:312},{t:300,s:277},{t:325,s:239}]},
+  {spec:"SB-265 26 R52404 Annealed PNo.51",den:4510,st:[{t:40,s:1005},{t:65,s:965},{t:100,s:851},{t:125,s:784},{t:150,s:722},{t:175,s:671},{t:200,s:626},{t:225,s:587},{t:250,s:550},{t:275,s:511},{t:300,s:476},{t:325,s:446}]},
+  {spec:"SB-265 27 R52254 Annealed PNo.51",den:4510,st:[{t:40,s:703},{t:65,s:655},{t:100,s:567},{t:125,s:512},{t:150,s:462},{t:175,s:424},{t:200,s:392},{t:225,s:365},{t:250,s:342},{t:275,s:312},{t:300,s:277},{t:325,s:239}]},
+  {spec:"SB-333 N10001 Annealed PNo.44",den:9150,st:[{t:40,s:2009},{t:65,s:1968},{t:100,s:1897},{t:125,s:1846},{t:150,s:1805},{t:175,s:1764},{t:200,s:1733},{t:225,s:1703},{t:250,s:1672},{t:275,s:1652},{t:300,s:1632},{t:325,s:1611},{t:350,s:1601},{t:375,s:1581},{t:400,s:1570},{t:425,s:1550},{t:450,s:1540}]},
+  {spec:"SB-333 N10001 Annealed PNo.44",den:9150,st:[{t:40,s:2009},{t:65,s:2009},{t:100,s:2009},{t:125,s:2009},{t:150,s:2009},{t:175,s:1999},{t:200,s:1978},{t:225,s:1968},{t:250,s:1958},{t:275,s:1958},{t:300,s:1948},{t:325,s:1948},{t:350,s:1927},{t:375,s:1927},{t:400,s:1917},{t:425,s:1917},{t:450,s:1907}]},
+  {spec:"SB-333 N10629 Solution ann. PNo.44",den:9190,st:[{t:40,s:2203},{t:65,s:2203},{t:100,s:2203},{t:125,s:2203},{t:150,s:2203},{t:175,s:2203},{t:200,s:2203},{t:225,s:2203},{t:250,s:2192},{t:275,s:2172},{t:300,s:2162},{t:325,s:2141},{t:350,s:2131},{t:375,s:2121},{t:400,s:2111},{t:425,s:2101},{t:450,s:2090}]},
+  {spec:"SB-333 N10629 Solution ann. PNo.44",den:9190,st:[{t:40,s:2203},{t:65,s:2203},{t:100,s:2203},{t:125,s:2152},{t:150,s:2080},{t:175,s:2019},{t:200,s:1978},{t:225,s:1948},{t:250,s:1907},{t:275,s:1876},{t:300,s:1846},{t:325,s:1825},{t:350,s:1805},{t:375,s:1795},{t:400,s:1774},{t:425,s:1764},{t:450,s:1754}]},
+  {spec:"SB-333 N10665 Solution ann. PNo.44",den:9220,st:[{t:40,s:2203},{t:65,s:2203},{t:100,s:2203},{t:125,s:2172},{t:150,s:2121},{t:175,s:2080},{t:200,s:2039},{t:225,s:1999},{t:250,s:1968},{t:275,s:1948},{t:300,s:1927},{t:325,s:1907},{t:350,s:1886},{t:375,s:1866},{t:400,s:1846},{t:425,s:1815},{t:450,s:1795}]},
+  {spec:"SB-333 N10665 Solution ann. PNo.44",den:9220,st:[{t:40,s:2203},{t:65,s:2203},{t:100,s:2203},{t:125,s:2203},{t:150,s:2203},{t:175,s:2203},{t:200,s:2203},{t:225,s:2203},{t:250,s:2203},{t:275,s:2203},{t:300,s:2203},{t:325,s:2192},{t:350,s:2182},{t:375,s:2172},{t:400,s:2162},{t:425,s:2152},{t:450,s:2141}]},
+  {spec:"SB-333 N10675 Solution ann. PNo.44",den:9220,st:[{t:40,s:2203},{t:65,s:2203},{t:100,s:2203},{t:125,s:2203},{t:150,s:2203},{t:175,s:2203},{t:200,s:2203},{t:225,s:2203},{t:250,s:2192},{t:275,s:2172},{t:300,s:2162},{t:325,s:2141},{t:350,s:2131},{t:375,s:2121},{t:400,s:2111},{t:425,s:2101},{t:450,s:2090}]},
+  {spec:"SB-333 N10675 Solution ann. PNo.44",den:9220,st:[{t:40,s:2203},{t:65,s:2203},{t:100,s:2203},{t:125,s:2172},{t:150,s:2131},{t:175,s:2080},{t:200,s:2029},{t:225,s:1988},{t:250,s:1948},{t:275,s:1907},{t:300,s:1866},{t:325,s:1835},{t:350,s:1805},{t:375,s:1784},{t:400,s:1764},{t:425,s:1744},{t:450,s:1723}]},
+  {spec:"SB-409 N08800 Annealed PNo.45",den:8030,st:[{t:40,s:1407},{t:65,s:1407},{t:100,s:1407},{t:125,s:1407},{t:150,s:1407},{t:175,s:1407},{t:200,s:1407},{t:225,s:1407},{t:250,s:1407},{t:275,s:1407},{t:300,s:1407},{t:325,s:1407},{t:350,s:1407},{t:375,s:1407},{t:400,s:1407},{t:425,s:1407},{t:450,s:1407},{t:475,s:1407},{t:500,s:1407},{t:525,s:1397},{t:550,s:1336},{t:575,s:1101},{t:600,s:867},{t:625,s:657},{t:650,s:457},{t:675,s:306},{t:700,s:158},{t:725,s:115},{t:750,s:90},{t:775,s:71},{t:800,s:66},{t:825,s:51}]},
+  {spec:"SB-409 N08800 Annealed PNo.45",den:8030,st:[{t:40,s:1407},{t:65,s:1346},{t:100,s:1295},{t:125,s:1264},{t:150,s:1254},{t:175,s:1234},{t:200,s:1213},{t:225,s:1193},{t:250,s:1183},{t:275,s:1173},{t:300,s:1152},{t:325,s:1142},{t:350,s:1132},{t:375,s:1111},{t:400,s:1101},{t:425,s:1091},{t:450,s:1081},{t:475,s:1060},{t:500,s:1050},{t:525,s:1040},{t:550,s:1030},{t:575,s:1000},{t:600,s:867},{t:625,s:657},{t:650,s:457},{t:675,s:306},{t:700,s:158},{t:725,s:115},{t:750,s:90},{t:775,s:71},{t:800,s:66},{t:825,s:51}]},
+  {spec:"SB-409 N08810 Annealed PNo.45",den:8030,st:[{t:40,s:1173},{t:65,s:1132},{t:100,s:1071},{t:125,s:1040},{t:150,s:1012},{t:175,s:985},{t:200,s:961},{t:225,s:938},{t:250,s:916},{t:275,s:893},{t:300,s:871},{t:325,s:850},{t:350,s:831},{t:375,s:814},{t:400,s:800},{t:425,s:781},{t:450,s:768},{t:475,s:757},{t:500,s:742},{t:525,s:734},{t:550,s:726},{t:575,s:713},{t:600,s:697},{t:625,s:638},{t:650,s:516},{t:675,s:420},{t:700,s:343},{t:725,s:282},{t:750,s:230},{t:775,s:187},{t:800,s:153},{t:825,s:121},{t:850,s:92},{t:875,s:75},{t:900,s:60}]},
+  {spec:"SB-409 N08811 Annealed PNo.45",den:8030,st:[{t:40,s:1173},{t:65,s:1132},{t:100,s:1071},{t:125,s:1040},{t:150,s:1012},{t:175,s:985},{t:200,s:961},{t:225,s:938},{t:250,s:916},{t:275,s:893},{t:300,s:871},{t:325,s:850},{t:350,s:831},{t:375,s:814},{t:400,s:800},{t:425,s:781},{t:450,s:768},{t:475,s:757},{t:500,s:742},{t:525,s:734},{t:550,s:726},{t:575,s:712},{t:600,s:700},{t:625,s:677},{t:650,s:579},{t:675,s:477},{t:700,s:394},{t:725,s:321},{t:750,s:260},{t:775,s:210},{t:800,s:174},{t:825,s:141},{t:850,s:104},{t:875,s:81},{t:900,s:63}]},
+  {spec:"SB-409 N08811 Annealed PNo.45",den:8030,st:[{t:40,s:1173},{t:65,s:1173},{t:100,s:1173},{t:125,s:1173},{t:150,s:1173},{t:175,s:1173},{t:200,s:1173},{t:225,s:1173},{t:250,s:1173},{t:275,s:1173},{t:300,s:1173},{t:325,s:1152},{t:350,s:1122},{t:375,s:1101},{t:400,s:1071},{t:425,s:1060},{t:450,s:1040},{t:475,s:1020},{t:500,s:1006},{t:525,s:990},{t:550,s:980},{t:575,s:960},{t:600,s:872},{t:625,s:707},{t:650,s:579},{t:675,s:477},{t:700,s:394},{t:725,s:321},{t:750,s:260},{t:775,s:210},{t:800,s:174},{t:825,s:141},{t:850,s:104},{t:875,s:81},{t:900,s:63}]},
+  {spec:"SB-409 N08810 Sol. treat./ann. PNo.45",den:8030,st:[{t:40,s:1173},{t:65,s:1173},{t:100,s:1173},{t:125,s:1173},{t:150,s:1173},{t:175,s:1173},{t:200,s:1173},{t:225,s:1173},{t:250,s:1173},{t:275,s:1173},{t:300,s:1173},{t:325,s:1152},{t:350,s:1122},{t:375,s:1101},{t:400,s:1071},{t:425,s:1060},{t:450,s:1040},{t:475,s:1020},{t:500,s:1005},{t:525,s:990},{t:550,s:978},{t:575,s:936},{t:600,s:772},{t:625,s:638},{t:650,s:516},{t:675,s:420},{t:700,s:343},{t:725,s:282},{t:750,s:230},{t:775,s:187},{t:800,s:153},{t:825,s:121},{t:850,s:92},{t:875,s:75},{t:900,s:60}]},
+  {spec:"SB-424 N08825 Annealed PNo.45",den:8140,st:[{t:40,s:1642},{t:65,s:1570},{t:100,s:1489},{t:125,s:1458},{t:150,s:1428},{t:175,s:1397},{t:200,s:1366},{t:225,s:1336},{t:250,s:1315},{t:275,s:1285},{t:300,s:1264},{t:325,s:1244},{t:350,s:1224},{t:375,s:1213},{t:400,s:1213},{t:425,s:1193},{t:450,s:1193},{t:475,s:1193},{t:500,s:1183},{t:525,s:1173},{t:550,s:1152}]},
+  {spec:"SB-424 N08825 Annealed PNo.45",den:8140,st:[{t:40,s:1642},{t:65,s:1642},{t:100,s:1642},{t:125,s:1642},{t:150,s:1642},{t:175,s:1642},{t:200,s:1642},{t:225,s:1642},{t:250,s:1642},{t:275,s:1642},{t:300,s:1642},{t:325,s:1642},{t:350,s:1642},{t:375,s:1642},{t:400,s:1632},{t:425,s:1621},{t:450,s:1611},{t:475,s:1601},{t:500,s:1591},{t:525,s:1581},{t:550,s:1560}]},
+  {spec:"SB-434 N10003 Annealed PNo.44",den:8860,st:[{t:40,s:1876},{t:65,s:1805},{t:100,s:1713},{t:125,s:1652},{t:150,s:1591},{t:175,s:1540},{t:200,s:1489},{t:225,s:1448},{t:250,s:1417},{t:275,s:1387},{t:300,s:1366},{t:325,s:1356},{t:350,s:1336},{t:375,s:1326},{t:400,s:1315},{t:425,s:1295},{t:450,s:1275},{t:475,s:1244},{t:500,s:1203},{t:525,s:1152},{t:550,s:1101},{t:575,s:997},{t:600,s:823},{t:625,s:619},{t:650,s:416},{t:675,s:342},{t:700,s:262},{t:725,s:177}]},
+  {spec:"SB-435 N06002 Annealed PNo.43",den:8310,st:[{t:40,s:1642},{t:65,s:1642},{t:100,s:1642},{t:125,s:1642},{t:150,s:1642},{t:175,s:1642},{t:200,s:1642},{t:225,s:1621},{t:250,s:1581},{t:275,s:1550},{t:300,s:1509},{t:325,s:1479},{t:350,s:1448},{t:375,s:1428},{t:400,s:1417},{t:425,s:1397},{t:450,s:1387},{t:475,s:1377},{t:500,s:1377},{t:525,s:1366},{t:550,s:1356},{t:575,s:1336},{t:600,s:1173},{t:625,s:978},{t:650,s:788},{t:675,s:661},{t:700,s:560},{t:725,s:457},{t:750,s:368},{t:775,s:298},{t:800,s:242},{t:825,s:194},{t:850,s:151},{t:875,s:114},{t:900,s:83}]},
+  {spec:"SB-435 N06002 Annealed PNo.43",den:8310,st:[{t:40,s:1642},{t:65,s:1560},{t:100,s:1458},{t:125,s:1397},{t:150,s:1346},{t:175,s:1295},{t:200,s:1254},{t:225,s:1213},{t:250,s:1173},{t:275,s:1142},{t:300,s:1122},{t:325,s:1091},{t:350,s:1071},{t:375,s:1060},{t:400,s:1050},{t:425,s:1030},{t:450,s:1030},{t:475,s:1020},{t:500,s:1015},{t:525,s:1007},{t:550,s:1005},{t:575,s:1003},{t:600,s:997},{t:625,s:978},{t:650,s:788},{t:675,s:661},{t:700,s:560},{t:725,s:457},{t:750,s:368},{t:775,s:298},{t:800,s:242},{t:825,s:194},{t:850,s:151},{t:875,s:114},{t:900,s:83}]},
+  {spec:"SB-435 R30556 Annealed PNo.45",den:8200,st:[{t:40,s:2009},{t:65,s:1907},{t:100,s:1774},{t:125,s:1693},{t:150,s:1621},{t:175,s:1560},{t:200,s:1509},{t:225,s:1458},{t:250,s:1428},{t:275,s:1397},{t:300,s:1377},{t:325,s:1346},{t:350,s:1326},{t:375,s:1315},{t:400,s:1295},{t:425,s:1285},{t:450,s:1264},{t:475,s:1254},{t:500,s:1244},{t:525,s:1234},{t:550,s:1224},{t:575,s:1213},{t:600,s:1203},{t:625,s:1173},{t:650,s:948},{t:675,s:776},{t:700,s:641},{t:725,s:523},{t:750,s:426},{t:775,s:350},{t:800,s:289},{t:825,s:230},{t:850,s:177},{t:875,s:143},{t:900,s:111}]},
+  {spec:"SB-435 R30556 Annealed PNo.45",den:8200,st:[{t:40,s:2009},{t:65,s:2009},{t:100,s:2009},{t:125,s:1988},{t:150,s:1968},{t:175,s:1937},{t:200,s:1907},{t:225,s:1886},{t:250,s:1866},{t:275,s:1846},{t:300,s:1835},{t:325,s:1815},{t:350,s:1795},{t:375,s:1764},{t:400,s:1754},{t:425,s:1733},{t:450,s:1713},{t:475,s:1703},{t:500,s:1683},{t:525,s:1662},{t:550,s:1652},{t:575,s:1611},{t:600,s:1428},{t:625,s:1173},{t:650,s:948},{t:675,s:776},{t:700,s:641},{t:725,s:523},{t:750,s:426},{t:775,s:350},{t:800,s:289},{t:825,s:230},{t:850,s:177},{t:875,s:143},{t:900,s:111}]},
+  {spec:"SB-435 N06230 Solution ann. PNo.47",den:8970,st:[{t:40,s:2111},{t:65,s:2050},{t:100,s:1968},{t:125,s:1907},{t:150,s:1856},{t:175,s:1795},{t:200,s:1744},{t:225,s:1693},{t:250,s:1642},{t:275,s:1601},{t:300,s:1570},{t:325,s:1530},{t:350,s:1509},{t:375,s:1489},{t:400,s:1479},{t:425,s:1468},{t:450,s:1468},{t:475,s:1468},{t:500,s:1468},{t:525,s:1468},{t:550,s:1468},{t:575,s:1468},{t:600,s:1458},{t:625,s:1305},{t:650,s:1091},{t:675,s:917},{t:700,s:770},{t:725,s:634},{t:750,s:514},{t:775,s:415},{t:800,s:335},{t:825,s:258},{t:850,s:188},{t:875,s:142},{t:900,s:104}]},
+  {spec:"SB-435 N06230 Solution ann. PNo.47",den:8970,st:[{t:40,s:2111},{t:65,s:2111},{t:100,s:2111},{t:125,s:2111},{t:150,s:2111},{t:175,s:2111},{t:200,s:2111},{t:225,s:2111},{t:250,s:2111},{t:275,s:2101},{t:300,s:2080},{t:325,s:2060},{t:350,s:2039},{t:375,s:2019},{t:400,s:1999},{t:425,s:1978},{t:450,s:1978},{t:475,s:1978},{t:500,s:1978},{t:525,s:1978},{t:550,s:1978},{t:575,s:1907},{t:600,s:1540},{t:625,s:1305},{t:650,s:1091},{t:675,s:917},{t:700,s:770},{t:725,s:634},{t:750,s:514},{t:775,s:415},{t:800,s:335},{t:825,s:258},{t:850,s:188},{t:875,s:142},{t:900,s:104}]},
+  {spec:"SB-435 N12160 Solution ann. PNo.46",den:8080,st:[{t:40,s:1642},{t:65,s:1540},{t:100,s:1417},{t:125,s:1346},{t:150,s:1285},{t:175,s:1224},{t:200,s:1173},{t:225,s:1122},{t:250,s:1071},{t:275,s:1030},{t:300,s:1005},{t:325,s:984},{t:350,s:966},{t:375,s:955},{t:400,s:956},{t:425,s:949},{t:450,s:949},{t:475,s:949},{t:500,s:949},{t:525,s:949},{t:550,s:948},{t:575,s:910},{t:600,s:738},{t:625,s:624},{t:650,s:523},{t:675,s:441},{t:700,s:369},{t:725,s:316},{t:750,s:270},{t:775,s:229},{t:800,s:195},{t:825,s:164}]},
+  {spec:"SB-435 N12160 Solution ann. PNo.46",den:8080,st:[{t:40,s:1642},{t:65,s:1642},{t:100,s:1642},{t:125,s:1642},{t:150,s:1642},{t:175,s:1621},{t:200,s:1570},{t:225,s:1509},{t:250,s:1448},{t:275,s:1397},{t:300,s:1356},{t:325,s:1326},{t:350,s:1305},{t:375,s:1295},{t:400,s:1285},{t:425,s:1285},{t:450,s:1285},{t:475,s:1285},{t:500,s:1285},{t:525,s:1244},{t:550,s:1071},{t:575,s:910},{t:600,s:738},{t:625,s:624},{t:650,s:523},{t:675,s:441},{t:700,s:369},{t:725,s:316},{t:750,s:270},{t:775,s:229},{t:800,s:195},{t:825,s:164}]},
+  {spec:"SB-443 1 N06625 Annealed PNo.43",den:8440,st:[{t:40,s:2203},{t:65,s:2203},{t:100,s:2203},{t:125,s:2203},{t:150,s:2203},{t:175,s:2192},{t:200,s:2172},{t:225,s:2152},{t:250,s:2131},{t:275,s:2111},{t:300,s:2101},{t:325,s:2080},{t:350,s:2060},{t:375,s:2039},{t:400,s:2029},{t:425,s:2009},{t:450,s:1988},{t:475,s:1978},{t:500,s:1958},{t:525,s:1937},{t:550,s:1917},{t:575,s:1886},{t:600,s:1825},{t:625,s:1397},{t:650,s:907}]},
+  {spec:"SB-443 1 N06625 Annealed PNo.43",den:8440,st:[{t:40,s:2406},{t:65,s:2406},{t:100,s:2406},{t:125,s:2406},{t:150,s:2406},{t:175,s:2396},{t:200,s:2366},{t:225,s:2345},{t:250,s:2325},{t:275,s:2305},{t:300,s:2284},{t:325,s:2274},{t:350,s:2254},{t:375,s:2233},{t:400,s:2213},{t:425,s:2192},{t:450,s:2172},{t:475,s:2162},{t:500,s:2141},{t:525,s:2111},{t:550,s:2090},{t:575,s:2060},{t:600,s:1958},{t:625,s:1387},{t:650,s:908}]},
+  {spec:"SB-443 2 N06625 Solution ann. PNo.43",den:8440,st:[{t:40,s:1876},{t:65,s:1815},{t:100,s:1733},{t:125,s:1693},{t:150,s:1662},{t:175,s:1621},{t:200,s:1591},{t:225,s:1570},{t:250,s:1540},{t:275,s:1519},{t:300,s:1499},{t:325,s:1479},{t:350,s:1458},{t:375,s:1448},{t:400,s:1428},{t:425,s:1417},{t:450,s:1407},{t:475,s:1397},{t:500,s:1387},{t:525,s:1377},{t:550,s:1366},{t:575,s:1366},{t:600,s:1366},{t:625,s:1356},{t:650,s:1356},{t:675,s:1071},{t:700,s:849},{t:725,s:649},{t:750,s:512},{t:775,s:401},{t:800,s:307},{t:825,s:239},{t:850,s:168},{t:875,s:127}]},
+  {spec:"SB-443 N06625 Annealed PNo.43",den:8440,st:[{t:40,s:2203},{t:65,s:2203},{t:100,s:2203},{t:125,s:2203},{t:150,s:2203},{t:175,s:2192},{t:200,s:2172},{t:225,s:2152},{t:250,s:2131},{t:275,s:2111},{t:300,s:2101},{t:325,s:2080},{t:350,s:2060},{t:375,s:2039},{t:400,s:2029},{t:425,s:2009},{t:450,s:1988}]},
+  {spec:"SB-463 N08020 Annealed PNo.45",den:8050,st:[{t:40,s:1611},{t:65,s:1519},{t:100,s:1438},{t:125,s:1407},{t:150,s:1387},{t:175,s:1356},{t:200,s:1336},{t:225,s:1305},{t:250,s:1285},{t:275,s:1264},{t:300,s:1254},{t:325,s:1244},{t:350,s:1224},{t:375,s:1224},{t:400,s:1213},{t:425,s:1183},{t:450,s:1162}]},
+  {spec:"SB-463 N08020 Annealed PNo.45",den:8050,st:[{t:40,s:1611},{t:65,s:1611},{t:100,s:1611},{t:125,s:1601},{t:150,s:1591},{t:175,s:1570},{t:200,s:1560},{t:225,s:1560},{t:250,s:1550},{t:275,s:1550},{t:300,s:1550},{t:325,s:1550},{t:350,s:1550},{t:375,s:1540},{t:400,s:1530},{t:425,s:1530},{t:450,s:1530}]},
+  {spec:"SB-463 N08024 Annealed PNo.45",den:8110,st:[{t:40,s:1611},{t:65,s:1530},{t:100,s:1438},{t:125,s:1387},{t:150,s:1346},{t:175,s:1315},{t:200,s:1275},{t:225,s:1244},{t:250,s:1213},{t:275,s:1173},{t:300,s:1142},{t:325,s:1111},{t:350,s:1091},{t:375,s:1060},{t:400,s:1040},{t:425,s:1030},{t:450,s:1015}]},
+  {spec:"SB-463 N08024 Annealed PNo.45",den:8110,st:[{t:40,s:1611},{t:65,s:1611},{t:100,s:1611},{t:125,s:1601},{t:150,s:1591},{t:175,s:1570},{t:200,s:1540},{t:225,s:1530},{t:250,s:1509},{t:275,s:1489},{t:300,s:1468},{t:325,s:1458},{t:350,s:1448},{t:375,s:1428},{t:400,s:1407},{t:425,s:1377},{t:450,s:1356}]},
+  {spec:"SB-463 N08026 Annealed PNo.45",den:8140,st:[{t:40,s:1611},{t:65,s:1530},{t:100,s:1438},{t:125,s:1387},{t:150,s:1336},{t:175,s:1285},{t:200,s:1234},{t:225,s:1193},{t:250,s:1162},{t:275,s:1122},{t:300,s:1091},{t:325,s:1071},{t:350,s:1040},{t:375,s:1016},{t:400,s:997},{t:425,s:979},{t:450,s:960}]},
+  {spec:"SB-463 N08026 Annealed PNo.45",den:8140,st:[{t:40,s:1611},{t:65,s:1611},{t:100,s:1611},{t:125,s:1601},{t:150,s:1581},{t:175,s:1560},{t:200,s:1540},{t:225,s:1519},{t:250,s:1499},{t:275,s:1479},{t:300,s:1458},{t:325,s:1438},{t:350,s:1407},{t:375,s:1377},{t:400,s:1346},{t:425,s:1326},{t:450,s:1295}]},
+  {spec:"SB-536 N08330 PNo.46",den:8030,st:[{t:40,s:1407},{t:65,s:1326},{t:100,s:1234},{t:125,s:1183},{t:150,s:1152},{t:175,s:1122},{t:200,s:1091},{t:225,s:1071},{t:250,s:1040},{t:275,s:1020},{t:300,s:997},{t:325,s:977},{t:350,s:959},{t:375,s:939},{t:400,s:921},{t:425,s:908},{t:450,s:889},{t:475,s:876},{t:500,s:859},{t:525,s:842},{t:550,s:794},{t:575,s:650},{t:600,s:515},{t:625,s:407},{t:650,s:327},{t:675,s:270},{t:700,s:225},{t:725,s:182},{t:750,s:140},{t:775,s:115},{t:800,s:93},{t:825,s:73}]},
+  {spec:"SB-536 N08330 PNo.46",den:8030,st:[{t:40,s:1407},{t:65,s:1407},{t:100,s:1407},{t:125,s:1407},{t:150,s:1407},{t:175,s:1397},{t:200,s:1377},{t:225,s:1366},{t:250,s:1366},{t:275,s:1356},{t:300,s:1346},{t:325,s:1315},{t:350,s:1295},{t:375,s:1264},{t:400,s:1244},{t:425,s:1224},{t:450,s:1203},{t:475,s:1183},{t:500,s:1142},{t:525,s:1020},{t:550,s:796},{t:575,s:650},{t:600,s:515},{t:625,s:407},{t:650,s:327},{t:675,s:270},{t:700,s:225},{t:725,s:182},{t:750,s:140},{t:775,s:115},{t:800,s:93},{t:825,s:73}]},
+  {spec:"SB-536 N08330 Annealed PNo.46",den:8030,st:[{t:40,s:1407},{t:65,s:1326},{t:100,s:1234},{t:125,s:1183},{t:150,s:1152},{t:175,s:1122},{t:200,s:1091},{t:225,s:1071},{t:250,s:1040},{t:275,s:1020},{t:300,s:997},{t:325,s:977},{t:350,s:959},{t:375,s:939},{t:400,s:921},{t:425,s:908},{t:450,s:889},{t:475,s:876},{t:500,s:859},{t:525,s:842},{t:550,s:794},{t:575,s:650},{t:600,s:515},{t:625,s:407},{t:650,s:327},{t:675,s:270},{t:700,s:225},{t:725,s:182},{t:750,s:140},{t:775,s:115},{t:800,s:93},{t:825,s:73},{t:850,s:60},{t:875,s:46},{t:900,s:33}]},
+  {spec:"SB-536 N08330 Annealed PNo.46",den:8030,st:[{t:40,s:1407},{t:65,s:1407},{t:100,s:1407},{t:125,s:1407},{t:150,s:1407},{t:175,s:1397},{t:200,s:1377},{t:225,s:1366},{t:250,s:1366},{t:275,s:1356},{t:300,s:1346},{t:325,s:1315},{t:350,s:1295},{t:375,s:1264},{t:400,s:1244},{t:425,s:1224},{t:450,s:1203},{t:475,s:1183},{t:500,s:1142},{t:525,s:1020},{t:550,s:796},{t:575,s:650},{t:600,s:515},{t:625,s:407},{t:650,s:327},{t:675,s:270},{t:700,s:225},{t:725,s:182},{t:750,s:140},{t:775,s:115},{t:800,s:93},{t:825,s:73},{t:850,s:60},{t:875,s:46},{t:900,s:33}]},
+  {spec:"SB-551 R60702 Annealed PNo.61",den:6480,st:[{t:40,s:1101},{t:65,s:1060},{t:100,s:939},{t:125,s:860},{t:150,s:784},{t:175,s:715},{t:200,s:650},{t:225,s:599},{t:250,s:544},{t:275,s:488},{t:300,s:444},{t:325,s:411},{t:350,s:387},{t:375,s:362}]},
+  {spec:"SB-551 R60705 Annealed PNo.62",den:6480,st:[{t:40,s:1611},{t:65,s:1468},{t:100,s:1305},{t:125,s:1213},{t:150,s:1132},{t:175,s:1071},{t:200,s:1015},{t:225,s:966},{t:250,s:923},{t:275,s:885},{t:300,s:853},{t:325,s:828},{t:350,s:810},{t:375,s:791}]},
+  {spec:"SB-575 N06022 Solution ann. PNo.44",den:8690,st:[{t:40,s:2009},{t:65,s:2009},{t:100,s:2009},{t:125,s:1999},{t:150,s:1978},{t:175,s:1948},{t:200,s:1917},{t:225,s:1886},{t:250,s:1866},{t:275,s:1856},{t:300,s:1835},{t:325,s:1825},{t:350,s:1815},{t:375,s:1795},{t:400,s:1784},{t:425,s:1774},{t:450,s:1764},{t:475,s:1754},{t:500,s:1744},{t:525,s:1723},{t:550,s:1703},{t:575,s:1509},{t:600,s:1183},{t:625,s:856},{t:650,s:669},{t:675,s:542},{t:700,s:417}]},
+  {spec:"SB-575 N06022 Solution ann. PNo.44",den:8690,st:[{t:40,s:2009},{t:65,s:1948},{t:100,s:1856},{t:125,s:1795},{t:150,s:1723},{t:175,s:1672},{t:200,s:1621},{t:225,s:1570},{t:250,s:1530},{t:275,s:1489},{t:300,s:1448},{t:325,s:1428},{t:350,s:1397},{t:375,s:1377},{t:400,s:1356},{t:425,s:1336},{t:450,s:1326},{t:475,s:1315},{t:500,s:1305},{t:525,s:1295},{t:550,s:1285},{t:575,s:1264},{t:600,s:1183},{t:625,s:856},{t:650,s:669},{t:675,s:542},{t:700,s:417}]},
+  {spec:"SB-575 N06059 Solution ann. PNo.44",den:8600,st:[{t:40,s:2009},{t:65,s:1948},{t:100,s:1876},{t:125,s:1825},{t:150,s:1774},{t:175,s:1723},{t:200,s:1683},{t:225,s:1642},{t:250,s:1601},{t:275,s:1570},{t:300,s:1530},{t:325,s:1489},{t:350,s:1448},{t:375,s:1417},{t:400,s:1377},{t:425,s:1346},{t:450,s:1305},{t:475,s:1275},{t:500,s:1244},{t:525,s:1213},{t:550,s:1193},{t:575,s:1173},{t:600,s:1142},{t:625,s:997},{t:650,s:809},{t:675,s:670},{t:700,s:541},{t:725,s:438},{t:750,s:364},{t:775,s:296}]},
+  {spec:"SB-575 N06059 Solution ann. PNo.44",den:8600,st:[{t:40,s:2009},{t:65,s:2009},{t:100,s:2009},{t:125,s:2009},{t:150,s:2009},{t:175,s:1999},{t:200,s:1978},{t:225,s:1948},{t:250,s:1907},{t:275,s:1876},{t:300,s:1846},{t:325,s:1815},{t:350,s:1795},{t:375,s:1764},{t:400,s:1754},{t:425,s:1733},{t:450,s:1713},{t:475,s:1703},{t:500,s:1683},{t:525,s:1642},{t:550,s:1611},{t:575,s:1530},{t:600,s:1244},{t:625,s:997},{t:650,s:809},{t:675,s:670},{t:700,s:541},{t:725,s:438},{t:750,s:364},{t:775,s:296}]},
+  {spec:"SB-575 N06200 Solution ann. PNo.43",den:8500,st:[{t:40,s:1927},{t:100,s:1713},{t:150,s:1591},{t:200,s:1479},{t:250,s:1377},{t:300,s:1295},{t:325,s:1264},{t:350,s:1234},{t:375,s:1224},{t:400,s:1203},{t:425,s:1193},{t:450,s:1193}]},
+  {spec:"SB-575 N06200 Solution ann. PNo.43",den:8500,st:[{t:40,s:1927},{t:100,s:1927},{t:150,s:1927},{t:200,s:1927},{t:250,s:1856},{t:300,s:1744},{t:325,s:1703},{t:350,s:1672},{t:375,s:1642},{t:400,s:1632},{t:425,s:1611},{t:450,s:1601}]},
+  {spec:"SB-575 N06455 Solution ann. PNo.44",den:8640,st:[{t:40,s:1876},{t:65,s:1805},{t:100,s:1713},{t:125,s:1662},{t:150,s:1611},{t:175,s:1570},{t:200,s:1530},{t:225,s:1499},{t:250,s:1468},{t:275,s:1448},{t:300,s:1428},{t:325,s:1407},{t:350,s:1397},{t:375,s:1377},{t:400,s:1366},{t:425,s:1346},{t:450,s:1326}]},
+  {spec:"SB-575 N06455 Solution ann. PNo.44",den:8640,st:[{t:40,s:1876},{t:65,s:1876},{t:100,s:1876},{t:125,s:1876},{t:150,s:1876},{t:175,s:1876},{t:200,s:1876},{t:225,s:1876},{t:250,s:1876},{t:275,s:1876},{t:300,s:1876},{t:325,s:1876},{t:350,s:1876},{t:375,s:1856},{t:400,s:1835},{t:425,s:1815},{t:450,s:1795}]},
+  {spec:"SB-575 N06686 Solution ann. PNo.43",den:8730,st:[{t:40,s:2009},{t:65,s:2009},{t:100,s:2009},{t:150,s:1978},{t:200,s:1917},{t:250,s:1866},{t:300,s:1835},{t:325,s:1815},{t:350,s:1805},{t:375,s:1784},{t:400,s:1774},{t:425,s:1754},{t:450,s:1733}]},
+  {spec:"SB-575 N06686 Solution ann. PNo.43",den:8730,st:[{t:40,s:2009},{t:65,s:1856},{t:100,s:1733},{t:150,s:1642},{t:200,s:1581},{t:250,s:1530},{t:300,s:1479},{t:325,s:1448},{t:350,s:1428},{t:375,s:1417},{t:400,s:1397},{t:425,s:1397},{t:450,s:1397}]},
+  {spec:"SB-575 N10276 Solution ann. PNo.44",den:8870,st:[{t:40,s:1917},{t:65,s:1917},{t:100,s:1917},{t:125,s:1917},{t:150,s:1917},{t:175,s:1917},{t:200,s:1917},{t:225,s:1917},{t:250,s:1907},{t:275,s:1866},{t:300,s:1805},{t:325,s:1754},{t:350,s:1723},{t:375,s:1683},{t:400,s:1652},{t:425,s:1621},{t:450,s:1601},{t:475,s:1591},{t:500,s:1581},{t:525,s:1570},{t:550,s:1479},{t:575,s:1203},{t:600,s:1011},{t:625,s:832},{t:650,s:683},{t:675,s:557},{t:700,s:430}]},
+  {spec:"SB-575 N10276 Solution ann. PNo.44",den:8870,st:[{t:40,s:1917},{t:65,s:1835},{t:100,s:1733},{t:125,s:1672},{t:150,s:1611},{t:175,s:1560},{t:200,s:1509},{t:225,s:1458},{t:250,s:1417},{t:275,s:1377},{t:300,s:1336},{t:325,s:1305},{t:350,s:1275},{t:375,s:1244},{t:400,s:1224},{t:425,s:1203},{t:450,s:1193},{t:475,s:1173},{t:500,s:1173},{t:525,s:1162},{t:550,s:1162},{t:575,s:1142},{t:600,s:1011},{t:625,s:832},{t:650,s:683},{t:675,s:557},{t:700,s:430}]},
+  {spec:"SB-582 N06985 Annealed [t <= 19] PNo.45",den:8310,st:[{t:40,s:1642},{t:65,s:1550},{t:100,s:1448},{t:125,s:1377},{t:150,s:1326},{t:175,s:1275},{t:200,s:1234},{t:225,s:1193},{t:250,s:1152},{t:275,s:1122},{t:300,s:1091},{t:325,s:1060},{t:350,s:1040},{t:375,s:1020},{t:400,s:1004},{t:425,s:985},{t:450,s:967}]},
+  {spec:"SB-582 N06985 Annealed [t <= 19] PNo.45",den:8310,st:[{t:40,s:1642},{t:65,s:1642},{t:100,s:1642},{t:125,s:1642},{t:150,s:1642},{t:175,s:1642},{t:200,s:1642},{t:225,s:1611},{t:250,s:1560},{t:275,s:1509},{t:300,s:1479},{t:325,s:1448},{t:350,s:1407},{t:375,s:1377},{t:400,s:1356},{t:425,s:1326},{t:450,s:1305}]},
+  {spec:"SB-582 N06985 Annealed [t > 19] PNo.45",den:8310,st:[{t:40,s:1407},{t:65,s:1326},{t:100,s:1234},{t:125,s:1183},{t:150,s:1132},{t:175,s:1091},{t:200,s:1050},{t:225,s:1020},{t:250,s:989},{t:275,s:961},{t:300,s:935},{t:325,s:914},{t:350,s:894},{t:375,s:877},{t:400,s:864},{t:425,s:845},{t:450,s:826}]},
+  {spec:"SB-582 N06985 Annealed [t > 19] PNo.45",den:8310,st:[{t:40,s:1407},{t:65,s:1407},{t:100,s:1407},{t:125,s:1407},{t:150,s:1407},{t:175,s:1407},{t:200,s:1407},{t:225,s:1387},{t:250,s:1346},{t:275,s:1295},{t:300,s:1264},{t:325,s:1234},{t:350,s:1213},{t:375,s:1183},{t:400,s:1162},{t:425,s:1142},{t:450,s:1122}]},
+  {spec:"SB-582 N06030 Solution ann. PNo.45",den:8220,st:[{t:40,s:1642},{t:65,s:1642},{t:100,s:1642},{t:125,s:1642},{t:150,s:1642},{t:175,s:1621},{t:200,s:1591},{t:225,s:1560},{t:250,s:1550},{t:275,s:1530},{t:300,s:1509},{t:325,s:1489},{t:350,s:1458},{t:375,s:1438},{t:400,s:1407},{t:425,s:1387},{t:450,s:1366}]},
+  {spec:"SB-582 N06030 Solution ann. PNo.45",den:8220,st:[{t:40,s:1642},{t:65,s:1509},{t:100,s:1387},{t:125,s:1326},{t:150,s:1285},{t:175,s:1244},{t:200,s:1213},{t:225,s:1183},{t:250,s:1162},{t:275,s:1142},{t:300,s:1122},{t:325,s:1101},{t:350,s:1081},{t:375,s:1071},{t:400,s:1050},{t:425,s:1030},{t:450,s:1008}]},
+  {spec:"SB-582 N06975 Solution ann. PNo.45",den:8170,st:[{t:40,s:1499},{t:65,s:1428},{t:100,s:1356},{t:125,s:1326},{t:150,s:1295},{t:175,s:1264},{t:200,s:1234},{t:225,s:1203},{t:250,s:1173},{t:275,s:1142},{t:300,s:1111},{t:325,s:1091},{t:350,s:1071},{t:375,s:1050},{t:400,s:1040},{t:425,s:1030},{t:450,s:1030}]},
+  {spec:"SB-582 N06975 Solution ann. PNo.45",den:8170,st:[{t:40,s:1499},{t:65,s:1499},{t:100,s:1499},{t:125,s:1499},{t:150,s:1499},{t:175,s:1499},{t:200,s:1499},{t:225,s:1499},{t:250,s:1499},{t:275,s:1499},{t:300,s:1489},{t:325,s:1479},{t:350,s:1438},{t:375,s:1417},{t:400,s:1407},{t:425,s:1397},{t:450,s:1377}]},
+  {spec:"SB-582 N06007 Solution ann. [t <= 19] PNo.45",den:8310,st:[{t:40,s:1642},{t:65,s:1550},{t:100,s:1458},{t:125,s:1407},{t:150,s:1366},{t:175,s:1326},{t:200,s:1295},{t:225,s:1264},{t:250,s:1234},{t:275,s:1213},{t:300,s:1193},{t:325,s:1173},{t:350,s:1162},{t:375,s:1152},{t:400,s:1142},{t:425,s:1142},{t:450,s:1132},{t:475,s:1122},{t:500,s:1122},{t:525,s:1111},{t:550,s:1111}]},
+  {spec:"SB-582 N06007 Solution ann. [t <= 19] PNo.45",den:8310,st:[{t:40,s:1642},{t:65,s:1642},{t:100,s:1642},{t:125,s:1642},{t:150,s:1642},{t:175,s:1642},{t:200,s:1642},{t:225,s:1642},{t:250,s:1642},{t:275,s:1632},{t:300,s:1611},{t:325,s:1591},{t:350,s:1570},{t:375,s:1560},{t:400,s:1550},{t:425,s:1530},{t:450,s:1530},{t:475,s:1519},{t:500,s:1509},{t:525,s:1509},{t:550,s:1499}]},
+  {spec:"SB-582 N06007 Solution ann. [t > 19] PNo.45",den:8310,st:[{t:40,s:1407},{t:65,s:1336},{t:100,s:1254},{t:125,s:1213},{t:150,s:1173},{t:175,s:1142},{t:200,s:1111},{t:225,s:1081},{t:250,s:1060},{t:275,s:1040},{t:300,s:1020},{t:325,s:1007},{t:350,s:996},{t:375,s:990},{t:400,s:984},{t:425,s:978},{t:450,s:972},{t:475,s:966},{t:500,s:959},{t:525,s:955},{t:550,s:956}]},
+  {spec:"SB-582 N06007 Solution ann. [t > 19] PNo.45",den:8310,st:[{t:40,s:1407},{t:65,s:1407},{t:100,s:1407},{t:125,s:1407},{t:150,s:1407},{t:175,s:1407},{t:200,s:1407},{t:225,s:1407},{t:250,s:1407},{t:275,s:1397},{t:300,s:1387},{t:325,s:1366},{t:350,s:1346},{t:375,s:1336},{t:400,s:1326},{t:425,s:1315},{t:450,s:1305},{t:475,s:1305},{t:500,s:1295},{t:525,s:1285},{t:550,s:1285}]},
+  {spec:"SB-599 N08700 Solution ann. PNo.45",den:8030,st:[{t:40,s:1611},{t:65,s:1550},{t:100,s:1458},{t:125,s:1397},{t:150,s:1336},{t:175,s:1285},{t:200,s:1254},{t:225,s:1224},{t:250,s:1203},{t:275,s:1193},{t:300,s:1183},{t:325,s:1142},{t:350,s:1101}]},
+  {spec:"SB-599 N08700 Solution ann. PNo.45",den:8030,st:[{t:40,s:1611},{t:65,s:1611},{t:100,s:1611},{t:125,s:1601},{t:150,s:1591},{t:175,s:1570},{t:200,s:1550},{t:225,s:1530},{t:250,s:1519},{t:275,s:1509},{t:300,s:1509},{t:325,s:1509},{t:350,s:1509}]},
+  {spec:"SB-620 N08320 Solution ann. PNo.45",den:8050,st:[{t:40,s:1315},{t:65,s:1264},{t:100,s:1203},{t:125,s:1173},{t:150,s:1142},{t:175,s:1111},{t:200,s:1091},{t:225,s:1060},{t:250,s:1030},{t:275,s:1004},{t:300,s:983},{t:325,s:963},{t:350,s:943},{t:375,s:926},{t:400,s:914},{t:425,s:894},{t:450,s:875}]},
+  {spec:"SB-620 N08320 Solution ann. PNo.45",den:8050,st:[{t:40,s:1315},{t:65,s:1315},{t:100,s:1315},{t:125,s:1315},{t:150,s:1315},{t:175,s:1315},{t:200,s:1315},{t:225,s:1315},{t:250,s:1315},{t:275,s:1315},{t:300,s:1305},{t:325,s:1295},{t:350,s:1275},{t:375,s:1244},{t:400,s:1234},{t:425,s:1213},{t:450,s:1193}]},
+  {spec:"SB-625 N08904 Annealed PNo.45",den:8060,st:[{t:40,s:1428},{t:65,s:1285},{t:100,s:1152},{t:125,s:1101},{t:150,s:1060},{t:175,s:1019},{t:200,s:977},{t:225,s:939},{t:250,s:905},{t:275,s:876},{t:300,s:850},{t:325,s:829},{t:350,s:812},{t:375,s:799}]},
+  {spec:"SB-625 N08925 Annealed PNo.45",den:8150,st:[{t:40,s:1754},{t:65,s:1693},{t:100,s:1611},{t:125,s:1550},{t:150,s:1499},{t:175,s:1448},{t:200,s:1397},{t:225,s:1356},{t:250,s:1305},{t:275,s:1264},{t:300,s:1234},{t:325,s:1203},{t:350,s:1193},{t:375,s:1193},{t:400,s:1193},{t:425,s:1193},{t:450,s:1193}]},
+  {spec:"SB-625 N08925 Annealed PNo.45",den:8150,st:[{t:40,s:1754},{t:65,s:1754},{t:100,s:1744},{t:125,s:1713},{t:150,s:1683},{t:175,s:1652},{t:200,s:1621},{t:225,s:1591},{t:250,s:1560},{t:275,s:1540},{t:300,s:1519},{t:325,s:1499},{t:350,s:1479},{t:375,s:1458},{t:400,s:1438},{t:425,s:1417},{t:450,s:1397}]},
+  {spec:"SB-625 N08031 Solution ann. PNo.45",den:8110,st:[{t:40,s:1876},{t:65,s:1703},{t:100,s:1519},{t:125,s:1448},{t:150,s:1387},{t:175,s:1336},{t:200,s:1295},{t:225,s:1254},{t:250,s:1224},{t:275,s:1193},{t:300,s:1173},{t:325,s:1142},{t:350,s:1132},{t:375,s:1111},{t:400,s:1091},{t:425,s:1071},{t:450,s:1050}]},
+  {spec:"SB-625 N08031 Solution ann. PNo.45",den:8110,st:[{t:40,s:1876},{t:65,s:1876},{t:100,s:1876},{t:125,s:1846},{t:150,s:1815},{t:175,s:1774},{t:200,s:1733},{t:225,s:1693},{t:250,s:1652},{t:275,s:1621},{t:300,s:1581},{t:325,s:1550},{t:350,s:1519},{t:375,s:1489},{t:400,s:1468},{t:425,s:1448},{t:450,s:1417}]},
+  {spec:"SB-625 R20033 Solution ann. PNo.45",den:7950,st:[{t:40,s:2182},{t:65,s:2182},{t:100,s:2162},{t:125,s:2080},{t:150,s:1968},{t:175,s:1897},{t:200,s:1846},{t:225,s:1805},{t:250,s:1764},{t:275,s:1713},{t:300,s:1672},{t:325,s:1652},{t:350,s:1642},{t:375,s:1621},{t:400,s:1611},{t:425,s:1591},{t:450,s:1570}]},
+  {spec:"SB-688 N08367 Solution ann. [t <= 5] PNo.45",den:8060,st:[{t:40,s:2009},{t:65,s:1927},{t:100,s:1825},{t:125,s:1744},{t:150,s:1672},{t:175,s:1601},{t:200,s:1550},{t:225,s:1499},{t:250,s:1458},{t:275,s:1417},{t:300,s:1387},{t:325,s:1356},{t:350,s:1326},{t:375,s:1305},{t:400,s:1285},{t:425,s:1264},{t:450,s:1244}]},
+  {spec:"SB-688 N08367 Solution ann. [t <= 5] PNo.45",den:8060,st:[{t:40,s:2009},{t:65,s:2009},{t:100,s:2009},{t:125,s:1958},{t:150,s:1897},{t:175,s:1846},{t:200,s:1815},{t:225,s:1795},{t:250,s:1764},{t:275,s:1744},{t:300,s:1733},{t:325,s:1713},{t:350,s:1703},{t:375,s:1693},{t:400,s:1683},{t:425,s:1672},{t:450,s:1662}]},
+  {spec:"SB-688 N08367 Solution ann. [t > 5] PNo.45",den:8060,st:[{t:40,s:1907},{t:65,s:1886},{t:100,s:1825},{t:125,s:1754},{t:150,s:1672},{t:175,s:1601},{t:200,s:1550},{t:225,s:1499},{t:250,s:1458},{t:275,s:1417},{t:300,s:1387},{t:325,s:1356},{t:350,s:1326},{t:375,s:1305},{t:400,s:1285},{t:425,s:1264},{t:450,s:1244}]},
+  {spec:"SB-688 N08367 Solution ann. [t > 5] PNo.45",den:8060,st:[{t:40,s:1907},{t:65,s:1907},{t:100,s:1897},{t:125,s:1856},{t:150,s:1805},{t:175,s:1764},{t:200,s:1733},{t:225,s:1703},{t:250,s:1683},{t:275,s:1662},{t:300,s:1642},{t:325,s:1632},{t:350,s:1621},{t:375,s:1611},{t:400,s:1601},{t:425,s:1591},{t:450,s:1581}]},
+  {spec:"SB-709 N08028 Annealed PNo.45",den:8000,st:[{t:40,s:1458},{t:65,s:1387},{t:100,s:1315},{t:125,s:1275},{t:150,s:1244},{t:175,s:1203},{t:200,s:1162},{t:225,s:1132},{t:250,s:1091},{t:275,s:1060},{t:300,s:1030},{t:325,s:1002},{t:350,s:978},{t:375,s:951},{t:400,s:920},{t:425,s:901},{t:450,s:877},{t:475,s:850}]},
+  {spec:"SB-709 N08028 Annealed PNo.45",den:8000,st:[{t:40,s:1458},{t:65,s:1458},{t:100,s:1458},{t:125,s:1438},{t:150,s:1407},{t:175,s:1387},{t:200,s:1356},{t:225,s:1336},{t:250,s:1326},{t:275,s:1305},{t:300,s:1285},{t:325,s:1275},{t:350,s:1264},{t:375,s:1244},{t:400,s:1234},{t:425,s:1213},{t:450,s:1183},{t:475,s:1152}]},
+  {spec:"SB-818 R31233 Solution ann. PNo.49",den:8400,st:[{t:40,s:2406},{t:65,s:2396},{t:100,s:2223},{t:150,s:1999},{t:200,s:1805},{t:250,s:1662},{t:300,s:1570},{t:325,s:1540},{t:350,s:1509},{t:375,s:1489},{t:400,s:1468},{t:425,s:1448},{t:450,s:1417}]},
+  {spec:"SB-96 C65500 O61 [t <= 50] PNo.33",den:8520,st:[{t:40,s:843},{t:65,s:837},{t:100,s:824},{t:125,s:818},{t:150,s:692},{t:175,s:374},{t:200,s:54}]}
+  ]
+};
+
+function iS(st, T) {
+  if (!st||!st.length) return null;
+  if (T<=st[0].t) return st[0].s;
+  const last=st[st.length-1];
+  if (T>=last.t) return last.s;
+  for (let i=0;i<st.length-1;i++) {
+    if (T>=st[i].t && T<=st[i+1].t) {
+      const f=(T-st[i].t)/(st[i+1].t-st[i].t);
+      return st[i].s+f*(st[i+1].s-st[i].s);
+    }
+  }
+  return null;
+}
+
+
+// ── HELP MODAL RENDERER ──────────────────────────────────────────
+function renderText(text) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((p,i)=>p.startsWith('**')&&p.endsWith('**')
+    ?<strong key={i}>{p.slice(2,-2)}</strong>:p);
+}
+
+function HelpModal({ onClose }) {
+  const [editMode, setEditMode] = React.useState(false);
+  const [saved,    setSaved]    = React.useState(false);
+  // 편집용 deep copy — HELP_CONTENT를 JSON 복사해서 state로 관리
+  const [data, setData] = React.useState(()=>JSON.parse(JSON.stringify(HELP_CONTENT)));
+
+  // 텍스트 블록 변경
+  const setBlockText = (si,bi,val) => {
+    setData(d=>{
+      const nd=JSON.parse(JSON.stringify(d));
+      nd.sections[si].blocks[bi].text=val;
+      return nd;
+    });
+  };
+  // 표 셀 변경
+  const setCellVal = (si,bi,ri,ci,val) => {
+    setData(d=>{
+      const nd=JSON.parse(JSON.stringify(d));
+      nd.sections[si].blocks[bi].rows[ri][ci]=val;
+      return nd;
+    });
+  };
+  // 섹션 제목 변경
+  const setSecTitle = (si,val) => {
+    setData(d=>{const nd=JSON.parse(JSON.stringify(d));nd.sections[si].title=val;return nd;});
+  };
+
+  // index.html 다운로드: 현재 HELP_CONTENT를 수정된 데이터로 교체해서 저장
+    const downloadHTML = () => {
+    // script 태그 원본 텍스트 가져오기
+    const scriptEl = document.querySelector('script[type="text/babel"]');
+    const orig = scriptEl.textContent;
+    // HELP_CONTENT 블록 경계 찾기
+    const m1 = 'const HELP_CONTENT = {';
+    const m2 = '}; // end HELP_CONTENT';
+    const i1 = orig.indexOf(m1);
+    const i2 = orig.indexOf(m2) + m2.length;
+    if (i1 < 0 || i2 < m2.length) { alert('저장 위치를 찾을 수 없습니다.'); return; }
+    // 새 HELP_CONTENT 직렬화 (JSON.stringify는 Babel과 무관하게 런타임 동작)
+    const newBlock = 'const HELP_CONTENT = ' + JSON.stringify(data, null, 2) + '; // end HELP_CONTENT';
+    const newScript = orig.slice(0, i1) + newBlock + orig.slice(i2);
+    // 전체 HTML 구성: outerHTML 대신 직접 조합
+    const fullHTML = document.documentElement.outerHTML.split(orig).join(newScript);
+    const blob = new Blob([fullHTML], {type: 'text/html;charset=utf-8'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'index.html';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setSaved(true);
+    setTimeout(function(){ setSaved(false); }, 3000);
+  };
+
+  const resetData = () => {
+    if(window.confirm('도움말을 원래 내용으로 초기화할까요?')) {
+      setData(JSON.parse(JSON.stringify(HELP_CONTENT)));
+    }
+  };
+
+  const { sections } = data;
+
+  return (
+    <div className="modal-backdrop" onClick={e=>{if(e.target===e.currentTarget)onClose()}}>
+      <div className="modal-box">
+
+        {/* 헤더 */}
+        <div className="modal-header">
+          <div>
+            <div className="modal-header-title">📖 {data.title}</div>
+            <div className="modal-header-sub">{data.subtitle}</div>
+          </div>
+          <div style={{display:'flex',gap:6,alignItems:'center'}}>
+            <button className={`btn-edit ${editMode?'btn-edit-active':''}`}
+              onClick={()=>setEditMode(v=>!v)}>
+              {editMode ? '✏️ 편집 중' : '✏️ 편집'}
+            </button>
+            <button className="modal-close" onClick={onClose}>✕ 닫기</button>
+          </div>
+        </div>
+
+        {/* 편집 중 안내 바 */}
+        {editMode && (
+          <div className="edit-bar">
+            <span className="edit-bar-msg">✏️ 텍스트를 클릭해서 바로 수정하세요. 수정 후 반드시 <strong>저장 후 다운로드</strong>하여 GitHub에 올려주세요.</span>
+            <button className="btn-reset" onClick={resetData}>↩ 초기화</button>
+          </div>
+        )}
+
+        {/* 본문 */}
+        <div className="modal-body">
+          {sections.map((sec, si) => (
+            <div key={si} className="help-section">
+              <div className="help-section-title">
+                <span className="hs-num">{si+1}</span>
+                {editMode
+                  ? <span contentEditable={true} suppressContentEditableWarning={true}
+                      style={{outline:'none',borderBottom:'1.5px dashed #f59e0b',minWidth:60,cursor:'text'}}
+                      onBlur={e=>setSecTitle(si,e.target.innerText)}>
+                      {sec.title}
+                    </span>
+                  : sec.title
+                }
+              </div>
+              {sec.blocks.map((blk,bi) => {
+                if (blk.type==='text') return (
+                  <p key={bi} className="help-p">
+                    {editMode
+                      ? <span contentEditable={true} suppressContentEditableWarning={true}
+                          className="editable-text" style={{display:'block'}}
+                          onBlur={e=>setBlockText(si,bi,e.target.innerText)}>
+                          {blk.text}
+                        </span>
+                      : renderText(blk.text)
+                    }
+                  </p>
+                );
+                if (blk.type==='note') return (
+                  <div key={bi} className="help-note">
+                    {editMode
+                      ? <span contentEditable={true} suppressContentEditableWarning={true}
+                          style={{display:'block',outline:'none',cursor:'text'}}
+                          onBlur={e=>setBlockText(si,bi,e.target.innerText)}>
+                          {blk.text}
+                        </span>
+                      : renderText(blk.text)
+                    }
+                  </div>
+                );
+                if (blk.type==='formula') return (
+                  <div key={bi} className="help-formula">
+                    {editMode
+                      ? <span contentEditable={true} suppressContentEditableWarning={true}
+                          style={{display:'block',outline:'none',cursor:'text',whiteSpace:'pre'}}
+                          onBlur={e=>setBlockText(si,bi,e.target.innerText)}>
+                          {blk.text}
+                        </span>
+                      : blk.text
+                    }
+                  </div>
+                );
+                if (blk.type==='table') return (
+                  <table key={bi} className="help-table">
+                    <thead>
+                      <tr>{blk.headers.map((h,hi)=><th key={hi}>{h}</th>)}</tr>
+                    </thead>
+                    <tbody>
+                      {blk.rows.map((row,ri)=>(
+                        <tr key={ri}>
+                          {row.map((cell,ci)=>(
+                            <td key={ci}>
+                              {editMode
+                                ? <span contentEditable={true} suppressContentEditableWarning={true}
+                                    className="editable-cell"
+                                    onBlur={e=>setCellVal(si,bi,ri,ci,e.target.innerText)}>
+                                    {cell}
+                                  </span>
+                                : renderText(cell)
+                              }
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                );
+                return null;
+              })}
+            </div>
+          ))}
+        </div>
+
+        {/* 저장 바 — 편집 모드일 때만 표시 */}
+        {editMode && (
+          <div className="download-bar">
+            <button className="btn-download" onClick={downloadHTML}>
+              💾 저장 후 다운로드 (index.html)
+            </button>
+            <span className="dl-msg">
+              {saved
+                ? '✅ 다운로드 완료! GitHub에 index.html을 올리면 모든 방문자에게 반영됩니다.'
+                : '수정 내용을 저장하고 GitHub에 올리면 모든 방문자에게 반영됩니다.'}
+            </span>
+          </div>
+        )}
+
+      </div>
+    </div>
+  );
+}
+
+// ── HELPERS ──────────────────────────────────────────────────────
+// Exact surface area of one 2:1 semi-ellipsoidal head (mean-diameter basis)
+// a = equatorial semi-axis (= mean_radius), b = a/2
+function ellipsoidSurface(a) {
+  const b=a/2, e=Math.sqrt(1-(b/a)**2);
+  return Math.PI*a*a*(1+(b/a)**2/e*Math.atanh(e));
+}
+// Horizontal cylinder liquid segment area at height H_m, radius R_m
+function segmentArea(R_m, H_m) {
+  if (H_m<=0) return 0;
+  if (H_m>=2*R_m) return Math.PI*R_m*R_m;
+  const c=Math.max(-1,Math.min(1,1-H_m/R_m)), θ=Math.acos(c);
+  return R_m*R_m*(θ-Math.sin(θ)*c);
+}
+// Exact liquid volume in one horizontal 2:1 ellipsoidal head
+// by numerical integration along vessel axis (N=400 slices)
+function headLiquidVol(R_m, H_m) {
+  const b=R_m/2, N=400, dx=b/N;
+  let V=0;
+  for (let i=0;i<N;i++){
+    const x=(i+0.5)*dx;
+    const r=R_m*Math.sqrt(1-(x/b)**2);
+    V+=segmentArea(r,H_m)*dx;
+  }
+  return V;
+}
+
+// ── CALCULATION ──────────────────────────────────────────────────
+function calc(i) {
+  const {P,T,D,L,H,rhoL,mat,CA,E,ts_in,th_in,rhoI,ti,orient,head}=i;
+  const warns=[];
+  const S=iS(mat.st,T);
+  if (!S) return {err:'해당 온도에서 허용응력을 결정할 수 없습니다.'};
+
+  const D_cm=D/10, R_cm=D_cm/2;
+
+  // ── Shell UG-27(c)(1) : t = P·R / (S·E − 0.6P) ──────────────
+  if (S*E<=0.6*P) return {err:`S×E (${(S*E).toFixed(0)}) ≤ 0.6×P (${(0.6*P).toFixed(2)}) — 재료·압력 재검토 필요`};
+  const ts_net_min=(P*R_cm)/(S*E-0.6*P)*10;       // mm, net
+  const ts_prime=ts_net_min+CA;                      // mm, required incl. CA
+  if (ts_net_min<1.6) warns.push(`Shell 최소두께 ${ts_net_min.toFixed(2)}mm < ASME UG-16 최소 1.6mm`);
+  const ts_used=ts_in>0?ts_in:Math.ceil(ts_prime);
+  if (ts_in>0&&ts_in<ts_prime) warns.push(`⚠ Shell 입력두께 ${ts_in}mm < 필요최소 ${ts_prime.toFixed(2)}mm`);
+
+  // ── Head UG-32 ────────────────────────────────────────────────
+  // th_prime  = B.F. (Before Forming) required thickness, incl. CA
+  // tf_prime  = A.F. (After Forming)  required thickness, incl. CA
+  // B.F.→A.F.: divide by 0.875 for formed heads (12.5% mill under-tolerance)
+  let th_af_net, tf_prime, th_prime;
+  if (head==='2:1 Ellipsoidal') {
+    if (2*S*E<=0.2*P) return {err:'Head 계산 한계 초과'};
+    th_af_net=(P*D_cm)/(2*S*E-0.2*P)*10;            // A.F. net minimum
+    tf_prime=th_af_net+CA;                            // A.F. required (incl. CA)
+    th_prime=tf_prime/0.875;                          // B.F. required
+  } else if (head==='Hemispherical') {
+    th_af_net=(P*R_cm)/(2*S*E-0.2*P)*10;
+    tf_prime=th_af_net+CA; th_prime=tf_prime;         // no forming thinning
+  } else if (head==='ASME F&D') {
+    th_af_net=(0.885*P*D_cm)/(S*E-0.1*P)*10;
+    tf_prime=th_af_net+CA; th_prime=tf_prime/0.875;
+  } else { // Flat
+    th_af_net=D*0.33*Math.sqrt(P/(S*E));
+    tf_prime=th_af_net+CA; th_prime=tf_prime;
+  }
+  const th_used=th_in>0?th_in:Math.ceil(th_prime);
+  if (th_in>0&&th_in<th_prime) warns.push(`⚠ Head 입력두께 ${th_in}mm < 필요최소 ${th_prime.toFixed(2)}mm`);
+
+  // ── MAWP ─────────────────────────────────────────────────────
+  // Shell: t_net_actual = (ts_used − CA), unit = cm
+  const ts_na=(ts_used-CA)/10;
+  const Ms=(S*E*ts_na)/(R_cm+0.6*ts_na);
+  // Head: for formed heads use A.F. net actual = ts_used×0.875 − CA
+  const isBF=(head==='2:1 Ellipsoidal'||head==='ASME F&D');
+  const th_aa=isBF?(th_used*0.875-CA)/10:(th_used-CA)/10;
+  let Mh=null;
+  if (head==='2:1 Ellipsoidal') Mh=(2*S*E*th_aa)/(D_cm+0.2*th_aa);
+  else if (head==='Hemispherical') Mh=(2*S*E*th_aa)/(R_cm+0.2*th_aa);
+  else if (head==='ASME F&D') Mh=(S*E*th_aa)/(0.885*D_cm+0.1*th_aa);
+
+  // ── Static head pressure ─────────────────────────────────────
+  const H_m=H/1000, D_m=D/1000, L_m=L/1000, R_m=D_m/2;
+  const SPs=(rhoL*H_m)/10000;   // kg/cm²G  (H in m, ρ in kg/m³)
+  if (P+SPs>Ms) warns.push(`P + 정수압 (${(P+SPs).toFixed(3)}) > Shell MAWP (${Ms.toFixed(3)}) kg/cm²G`);
+
+  // ── Volume ───────────────────────────────────────────────────
+  const Vs_v=Math.PI*R_m*R_m*L_m*1000;             // L
+  let Vh_e=0;
+  if      (head==='2:1 Ellipsoidal') Vh_e=Math.PI*D_m*D_m*D_m/24*1000;
+  else if (head==='Hemispherical')   Vh_e=2/3*Math.PI*R_m*R_m*R_m*1000;
+  else if (head==='ASME F&D')        Vh_e=Math.PI*0.000049*D_m*D_m*D_m*1000; // ≈0.1308×D³/8
+  const Vh_v=2*Vh_e;
+
+  let Vs_l=0, Vh_l=0;
+  const isH=orient.includes('수평');
+  if (isH) {
+    // Shell liquid: circular segment × length
+    Vs_l=(H_m>=D_m?Math.PI*R_m*R_m:segmentArea(R_m,H_m))*L_m*1000;
+    // Head liquid: exact numerical integration
+    if (head==='2:1 Ellipsoidal'||head==='Hemispherical'||head==='ASME F&D') {
+      Vh_l=2*headLiquidVol(R_m,H_m)*1000;
+    } else {
+      Vh_l=0;
+    }
+  } else {
+    // Vertical
+    Vs_l=Math.PI*R_m*R_m*Math.min(H_m,L_m)*1000;
+    Vh_l=H_m>L_m?Vh_v:(H_m>0?Vh_e:0);
+  }
+
+  // ── Surface area ─────────────────────────────────────────────
+  // Shell: mean-OD basis = π×(D+ts)×L  (bare metal)
+  const ts_mm=ts_used, th_mm=th_used;
+  const As   = Math.PI*(D+ts_mm)/1000*L_m;               // bare metal
+  const As_p = Math.PI*(D+2*ts_mm)/1000*L_m;             // painting (OD)
+  const As_i = Math.PI*(D+2*ts_mm+2*ti)/1000*L_m;        // insulation
+
+  // Head: exact 2:1 ellipsoidal surface with mean diameter basis
+  // a = mean equatorial radius = (D + th) / 2
+  let Ah_e, Ah_e_p, Ah_e_i;
+  if (head==='2:1 Ellipsoidal') {
+    Ah_e   = ellipsoidSurface((D+th_mm)/2/1000);
+    Ah_e_p = ellipsoidSurface((D+2*th_mm)/2/1000);
+    Ah_e_i = ellipsoidSurface((D+2*th_mm+2*ti)/2/1000);
+  } else if (head==='Hemispherical') {
+    Ah_e   = 2*Math.PI*((D+th_mm)/2/1000)**2;
+    Ah_e_p = 2*Math.PI*((D+2*th_mm)/2/1000)**2;
+    Ah_e_i = 2*Math.PI*((D+2*th_mm+2*ti)/2/1000)**2;
+  } else if (head==='ASME F&D') {
+    Ah_e   = 0.91*Math.PI*(D/2/1000)**2;
+    Ah_e_p = 0.91*Math.PI*((D/2+th_mm)/1000)**2;
+    Ah_e_i = 0.91*Math.PI*((D/2+th_mm+ti)/1000)**2;
+  } else {
+    Ah_e=Ah_e_p=Ah_e_i=Math.PI*(D/2/1000)**2;
+  }
+  const Ah   = 2*Ah_e,   At   = As   + Ah;
+  const Ah_p = 2*Ah_e_p, At_p = As_p + Ah_p;
+  const Ah_i = 2*Ah_e_i, At_i = As_i + Ah_i;
+
+  // ── Weight ───────────────────────────────────────────────────
+  // Shell: π×(D+ts)×ts×L (mean-OD circumference × thickness × length)
+  const Ws = mat.den * Math.PI*(D+ts_mm)/1000*(ts_mm/1000)*L_m;
+  // Head: exact half-ellipsoid shell volume = V_outer − V_inner
+  // V_half-ellipsoid = 2π/3 × a² × b  where a=equatorial radius, b=a/2
+  let Wh;
+  if (head==='2:1 Ellipsoidal') {
+    const th_af_actual = isBF ? th_mm*0.875 : th_mm;     // A.F. mm
+    const a_o=(D+2*th_af_actual)/2/1000, b_o=a_o/2;
+    const a_i=D/2/1000,                  b_i=a_i/2;
+    const Vone=2*Math.PI/3*(a_o*a_o*b_o - a_i*a_i*b_i);
+    Wh=mat.den*2*Vone;
+  } else if (head==='Hemispherical') {
+    const th_af_actual = th_mm;
+    const r_o=(D+2*th_af_actual)/2/1000, r_i=D/2/1000;
+    Wh=mat.den*2*(2*Math.PI/3)*(r_o**3-r_i**3);
+  } else {
+    // F&D / Flat: surface × thickness approximation
+    const th_af_actual = isBF ? th_mm*0.875 : th_mm;
+    Wh=mat.den*Ah*(th_af_actual/1000);
+  }
+  const Wt=Ws+Wh;
+  // Empty Weight = structural weight (shell+heads only, no nozzles/internals here)
+  const We=Wt;
+  // Operating weight = empty + liquid
+  const Wo=We+(Vs_l+Vh_l)/1000*rhoL;
+  // Insulation weight = density × total insulation surface × thickness
+  const Wi=rhoI*At_i*(ti/1000);
+
+  const f=(v,d=2)=>v!=null?parseFloat(v.toFixed(d)).toString():'—';
+  return {
+    S:f(S,0), ts_prime:f(ts_prime), th_prime:f(th_prime), tf_prime:f(tf_prime),
+    ts_used:f(ts_used,1), th_used:f(th_used,1),
+    Ms:f(Ms,3), Mh:Mh!=null?f(Mh,3):'—',
+    SPs:f(SPs,4), SPh:f(SPs,4),
+    As:f(As,2), Ah:f(Ah,2), At:f(At,2),
+    As_p:f(As_p,2), Ah_p:f(Ah_p,2), At_p:f(At_p,2),
+    As_i:f(As_i,2), Ah_i:f(Ah_i,2), At_i:f(At_i,2),
+    den:mat.den.toString(),
+    Ws:f(Ws,0), Wh:f(Wh,0), Wt:f(Wt,0), We:f(We,0), Wo:f(Wo,0), Wi:f(Wi,1),
+    Vs_v:f(Vs_v,0), Vs_l:f(Vs_l,0), Vh_v:f(Vh_v,0), Vh_l:f(Vh_l,0),
+    Vt_v:f(Vs_v+Vh_v,0), Vt_l:f(Vs_l+Vh_l,0),
+    Ms_ok:Ms>=P, Mh_ok:Mh!=null?Mh>=P:true,
+    warns,
+  };
+}
+
+// ── VESSEL DIAGRAM ───────────────────────────────────────────────
+function Diagram({ D, L, H, orient }) {
+  const isH = orient.includes('수평');
+
+  // shared arrow markers
+  const Markers = () => (
+    <defs>
+      <marker id="mA" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+        <path d="M0,0 L7,3.5 L0,7 Z" fill="#1a5490"/>
+      </marker>
+      <marker id="mB" markerWidth="7" markerHeight="7" refX="1" refY="3.5" orient="auto">
+        <path d="M7,0 L0,3.5 L7,7 Z" fill="#1a5490"/>
+      </marker>
+      <marker id="mC" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+        <path d="M0,0 L7,3.5 L0,7 Z" fill="#2563eb"/>
+      </marker>
+      <marker id="mD" markerWidth="7" markerHeight="7" refX="1" refY="3.5" orient="auto">
+        <path d="M7,0 L0,3.5 L7,7 Z" fill="#2563eb"/>
+      </marker>
+    </defs>
+  );
+
+  if (isH) {
+    // viewBox: fixed coordinate space — SVG scales to fill container
+    const VW = 420, VH = 165;
+    const mL = 44, mR = 28, mT = 14, mB = 38;
+    const vW = VW - mL - mR;
+    const vHmax = VH - mT - mB;
+
+    const ratio = (D > 0 && L > 0) ? Math.min(D / L, 0.72) : 0.38;
+    const vH = Math.max(Math.min(ratio * vW, vHmax), 52);
+    const x0 = mL, y0 = mT + (vHmax - vH) / 2;
+    const x1 = x0 + vW, y1 = y0 + vH;
+    const rx = vH / 2;          // fully rounded heads (stadium shape)
+    const cY = y0 + vH / 2;    // horizontal centerline Y
+    const tL = x0 + rx;        // left tangent X
+    const tR = x1 - rx;        // right tangent X
+
+    const lF = (D > 0) ? Math.min(1, Math.max(0, H / D)) : 0;
+    const liqY = y1 - lF * vH;
+
+    // D arrow: left-outside vertical; H arrow: right-inside vertical; L: bottom horizontal
+    const dX  = x0 - 22;         // D arrow X
+    const hX  = tR + (x1 - tR) * 0.55; // H arrow X (inside right head area)
+    const lY2 = y1 + 26;         // L arrow Y
+
+    return (
+      <svg viewBox={`0 0 ${VW} ${VH}`} width="100%"
+           style={{display:'block', maxHeight:155, overflow:'visible'}}>
+        <Markers/>
+        <clipPath id="vClipH">
+          <rect x={x0} y={y0} width={vW} height={vH} rx={rx} ry={rx}/>
+        </clipPath>
+
+        {/* Liquid fill */}
+        {lF > 0 && (
+          <rect x={x0} y={liqY} width={vW} height={y1 - liqY}
+                fill="rgba(37,99,235,0.13)" clipPath="url(#vClipH)"/>
+        )}
+
+        {/* Vessel outline */}
+        <rect x={x0} y={y0} width={vW} height={vH} rx={rx} ry={rx}
+              fill="none" stroke="#1a5490" strokeWidth="1.6"/>
+
+        {/* Dashed tangent lines */}
+        <line x1={tL} y1={y0-5} x2={tL} y2={y1+5}
+              stroke="#1a5490" strokeWidth="1" strokeDasharray="5,3"/>
+        <line x1={tR} y1={y0-5} x2={tR} y2={y1+5}
+              stroke="#1a5490" strokeWidth="1" strokeDasharray="5,3"/>
+
+        {/* Horizontal centerline */}
+        <line x1={x0-6} y1={cY} x2={x1+6} y2={cY}
+              stroke="#1a5490" strokeWidth="0.8" strokeDasharray="9,5"/>
+
+        {/* Liquid surface line */}
+        {lF > 0 && lF < 1 && (
+          <line x1={x0+4} y1={liqY} x2={x1-4} y2={liqY}
+                stroke="#2563eb" strokeWidth="1.1" strokeDasharray="6,3"/>
+        )}
+
+        {/* ── D arrow (left outside, top→bottom) ── */}
+        <line x1={dX} y1={y0} x2={dX} y2={y1}
+              stroke="#1a5490" strokeWidth="1.3"
+              markerStart="url(#mB)" markerEnd="url(#mA)"/>
+        {/* tick marks */}
+        <line x1={dX-5} y1={y0} x2={dX+5} y2={y0} stroke="#1a5490" strokeWidth="1"/>
+        <line x1={dX-5} y1={y1} x2={dX+5} y2={y1} stroke="#1a5490" strokeWidth="1"/>
+        <text x={dX-10} y={cY+5} fontSize="14" fontWeight="700" fill="#1a5490" textAnchor="middle">D</text>
+
+        {/* ── H arrow (inside right-head area, bottom→liquid) ── */}
+        {lF > 0 && lF < 0.99 && (
+          <>
+            <line x1={hX} y1={liqY} x2={hX} y2={y1}
+                  stroke="#2563eb" strokeWidth="1.3"
+                  markerStart="url(#mD)" markerEnd="url(#mC)"/>
+            <text x={hX + 10} y={(liqY + y1) / 2 + 5}
+                  fontSize="13" fontWeight="700" fill="#2563eb">H</text>
+          </>
+        )}
+
+        {/* ── L arrow (bottom, full width) ── */}
+        <line x1={x0} y1={lY2} x2={x1} y2={lY2}
+              stroke="#1a5490" strokeWidth="1.3"
+              markerStart="url(#mB)" markerEnd="url(#mA)"/>
+        <line x1={x0} y1={lY2-6} x2={x0} y2={lY2+6} stroke="#1a5490" strokeWidth="1"/>
+        <line x1={x1} y1={lY2-6} x2={x1} y2={lY2+6} stroke="#1a5490" strokeWidth="1"/>
+        <text x={(x0+x1)/2} y={lY2+14} fontSize="13" fontWeight="700" fill="#1a5490" textAnchor="middle">L</text>
+      </svg>
+    );
+
+  } else {
+    // ── Vertical vessel ──
+    const VW = 220, VH = 230;
+    const mL = 36, mR = 44, mT = 16, mB = 38;
+    const vHmax = VH - mT - mB, vWmax = VW - mL - mR;
+
+    const ratio = (D > 0 && L > 0) ? Math.min(D / L, 1.2) : 0.35;
+    const vH = Math.max(vHmax, 80);
+    const vW = Math.max(Math.min(ratio * vH, vWmax), 36);
+    const x0 = mL + (vWmax - vW) / 2, y0 = mT;
+    const x1 = x0 + vW, y1 = y0 + vH;
+    const ry = vW * 0.22;
+    const cX = x0 + vW / 2;
+
+    const lF = (L > 0) ? Math.min(1, Math.max(0, H / L)) : 0;
+    const liqY = y1 - lF * vH;
+
+    return (
+      <svg viewBox={`0 0 ${VW} ${VH}`} width="100%"
+           style={{display:'block', maxHeight:210, overflow:'visible'}}>
+        <Markers/>
+        <clipPath id="vClipV">
+          <rect x={x0} y={y0} width={vW} height={vH}/>
+        </clipPath>
+
+        {lF > 0 && (
+          <rect x={x0} y={liqY} width={vW} height={y1-liqY}
+                fill="rgba(37,99,235,.13)" clipPath="url(#vClipV)"/>
+        )}
+        <rect x={x0} y={y0} width={vW} height={vH}
+              fill="none" stroke="#1a5490" strokeWidth="1.6"/>
+        <ellipse cx={cX} cy={y0} rx={vW/2} ry={ry}
+                 fill="none" stroke="#1a5490" strokeWidth="1.6"/>
+        <ellipse cx={cX} cy={y1} rx={vW/2} ry={ry}
+                 fill="none" stroke="#1a5490" strokeWidth="1.6"/>
+
+        {/* Centerline horizontal */}
+        <line x1={x0-4} y1={(y0+y1)/2} x2={x1+4} y2={(y0+y1)/2}
+              stroke="#1a5490" strokeWidth="0.8" strokeDasharray="8,4"/>
+
+        {lF > 0 && lF < 1 && (
+          <line x1={x0+2} y1={liqY} x2={x1-2} y2={liqY}
+                stroke="#2563eb" strokeWidth="1.1" strokeDasharray="6,3"/>
+        )}
+
+        {/* D arrow bottom */}
+        <line x1={x0} y1={y1+24} x2={x1} y2={y1+24}
+              stroke="#1a5490" strokeWidth="1.3" markerStart="url(#mB)" markerEnd="url(#mA)"/>
+        <line x1={x0} y1={y1+18} x2={x0} y2={y1+30} stroke="#1a5490" strokeWidth="1"/>
+        <line x1={x1} y1={y1+18} x2={x1} y2={y1+30} stroke="#1a5490" strokeWidth="1"/>
+        <text x={cX} y={y1+38} fontSize="13" fontWeight="700" fill="#1a5490" textAnchor="middle">D</text>
+
+        {/* L arrow right side */}
+        <line x1={x1+24} y1={y0} x2={x1+24} y2={y1}
+              stroke="#1a5490" strokeWidth="1.3" markerStart="url(#mB)" markerEnd="url(#mA)"/>
+        <line x1={x1+18} y1={y0} x2={x1+30} y2={y0} stroke="#1a5490" strokeWidth="1"/>
+        <line x1={x1+18} y1={y1} x2={x1+30} y2={y1} stroke="#1a5490" strokeWidth="1"/>
+        <text x={x1+36} y={(y0+y1)/2+5} fontSize="13" fontWeight="700" fill="#1a5490">L</text>
+
+        {lF > 0 && lF < 1 && (
+          <>
+            <line x1={x0-22} y1={liqY} x2={x0-22} y2={y1}
+                  stroke="#2563eb" strokeWidth="1.3" markerStart="url(#mD)" markerEnd="url(#mC)"/>
+            <line x1={x0-28} y1={liqY} x2={x0-16} y2={liqY} stroke="#2563eb" strokeWidth="1"/>
+            <text x={x0-30} y={(liqY+y1)/2+5} fontSize="13" fontWeight="700" fill="#2563eb" textAnchor="middle">H</text>
+          </>
+        )}
+      </svg>
+    );
+  }
+}
+
+// ── APP ──────────────────────────────────────────────────────────
+function App() {
+  // ── resize ──
+  const [leftW,   setLeftW]    = useState(490);
+  const dragging = useRef(false);
+  const dragStart = useRef({x:0, w:0});
+  useEffect(() => {
+    const onMove = e => {
+      if (!dragging.current) return;
+      const dx = e.clientX - dragStart.current.x;
+      setLeftW(Math.max(280, Math.min(680, dragStart.current.w + dx)));
+    };
+    const onUp = () => { dragging.current = false; document.body.style.cursor=''; document.body.style.userSelect=''; };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
+  }, []);
+  const onDivider = e => {
+    dragging.current = true;
+    dragStart.current = { x: e.clientX, w: leftW };
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    e.preventDefault();
+  };
+
+  const [orient,  setOrient]   = useState('수평 (Horizontal)');
+  const [head,    setHead]     = useState('2:1 Ellipsoidal');
+  const [DP,      setDP]       = useState('20.5');
+  const [DT,      setDT]       = useState('350');
+  const [D,       setD]        = useState('2000');
+  const [L,       setL]        = useState('5000');
+  const [H,       setH]        = useState('1700');
+  const [rhoL,    setRhoL]     = useState('950');
+  const [matType, setMatType]  = useState('Ferrous');
+  const [spec,    setSpec]     = useState('SA-516 70 K02700 PNo.1');
+  const [CA,      setCA]       = useState('3');
+  const [E,       setE]        = useState('0.85');
+  const [ts_in,   setTsIn]     = useState('');
+  const [th_in,   setThIn]     = useState('');
+  const [rhoI,    setRhoI]     = useState('120');
+  const [ti,      setTi]       = useState('100');
+  const [userS,   setUserS]    = useState('');
+  const [useUS,   setUseUS]    = useState(false);
+  const [r,       setR]        = useState(null);
+  const [helpOpen, setHelpOpen] = useState(false);
+
+  const specs = (MATS[matType]||[]).map(m=>m.spec);
+  const autoS = (() => {
+    const m=(MATS[matType]||[]).find(m=>m.spec===spec);
+    const v=m?iS(m.st,parseFloat(DT)||20):null;
+    return v?Math.round(v).toString():'';
+  })();
+
+  const onMT = v => { setMatType(v); const l=MATS[v]||[]; if(l.length) setSpec(l[0].spec); };
+
+  const doCalc = () => {
+    const mat=(MATS[matType]||[]).find(m=>m.spec===spec);
+    if(!mat){setR({err:'재료 선택 오류'}); return;}
+    const matU=useUS&&userS?{...mat,st:[{t:-999,s:parseFloat(userS)},{t:9999,s:parseFloat(userS)}]}:mat;
+    setR(calc({
+      P:parseFloat(DP)||0, T:parseFloat(DT)||20,
+      D:parseFloat(D)||0,  L:parseFloat(L)||0,
+      H:parseFloat(H)||0,  rhoL:parseFloat(rhoL)||0,
+      mat:matU, CA:parseFloat(CA)||0, E:parseFloat(E)||1,
+      ts_in:parseFloat(ts_in)||0, th_in:parseFloat(th_in)||0,
+      rhoI:parseFloat(rhoI)||0,   ti:parseFloat(ti)||0,
+      orient, head,
+    }));
+  };
+
+  const dpMPa = ((parseFloat(DP)||0)*0.0981).toFixed(3);
+  const tCols  = '2.2fr 1fr 1fr 1fr 1fr 1fr 1fr';
+  const mCols  = '2fr 1fr 1fr 1fr 1fr';
+  const vCols  = '1.6fr .8fr 1fr 1fr';
+  const aCols  = '1.6fr .8fr 1fr';
+  const wCols  = '1.6fr 1fr 1fr 1fr 1fr 1fr';
+
+  return (
+    <div style={{display:'flex',flexDirection:'column',height:'100vh'}}>
+
+      {/* HEADER */}
+      <div className="hdr">
+        <div>
+          <div className="hdr-title">Vessel Thickness</div>
+          <div className="hdr-sub">ASME Sec.VIII Div.1 압력용기 두께 계산 — UG-27, UG-32 | 재질 DB: BPVC Sec.II-D + B31.3</div>
+        </div>
+        <button className="btn-help" onClick={()=>setHelpOpen(true)}>도움말</button>
+
+      {helpOpen && <HelpModal onClose={()=>setHelpOpen(false)}/>}
+      </div>
+
+      <div className="root">
+
+        {/* ═══ LEFT ═══ */}
+        <div className="left" style={{width: leftW}}>
+          <div className="left-scroll">
+
+            {/* 01 재질 */}
+            <div className="card">
+              <div className="card-hdr"><div className="badge">01</div><div className="card-title">재질 · 규격 (STANDARD / MATERIAL)</div></div>
+              <div className="card-body">
+                <div className="fr">
+                  <span className="fl">Material</span>
+                  <select className="fi fi-wide" value={matType} onChange={e=>onMT(e.target.value)}>
+                    <option value="Ferrous">Ferrous</option>
+                    <option value="Non-Ferrous">Non-Ferrous</option>
+                  </select>
+                </div>
+                <div style={{display:'flex',flexDirection:'column',gap:4}}>
+                  <span style={{fontSize:'11.5px',fontWeight:600,color:'#1e3a6e'}}>Plate Specification</span>
+                  <select className="fi fi-full" style={{width:'100%'}} value={spec} onChange={e=>setSpec(e.target.value)}>
+                    {specs.map(s=><option key={s}>{s}</option>)}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* 02 설계 조건 */}
+            <div className="card">
+              <div className="card-hdr"><div className="badge">02</div><div className="card-title">설계 조건 (DESIGN CONDITIONS)</div></div>
+              <div className="card-body">
+                {/* 2-col dropdowns */}
+                <div className="fg2">
+                  <div className="fg2-item">
+                    <span className="fl2">Orientation</span>
+                    <select className="fi" style={{width:'100%'}} value={orient} onChange={e=>setOrient(e.target.value)}>
+                      <option>수평 (Horizontal)</option><option>수직 (Vertical)</option>
+                    </select>
+                  </div>
+                  <div className="fg2-item">
+                    <span className="fl2">Head Type</span>
+                    <select className="fi" style={{width:'100%'}} value={head} onChange={e=>setHead(e.target.value)}>
+                      <option>2:1 Ellipsoidal</option><option>Hemispherical</option>
+                      <option>ASME F&amp;D</option><option>Flat</option>
+                    </select>
+                  </div>
+                </div>
+                <hr className="cdiv"/>
+                {/* 2-col: P, T */}
+                <div className="fg2">
+                  <div className="fg2-item">
+                    <span className="fl2">Design Pressure <b>P</b></span>
+                    <div className="fg2-row">
+                      <input className="fi fi-s" type="number" value={DP} onChange={e=>setDP(e.target.value)}/>
+                      <span className="fu">kg/cm²G</span>
+                    </div>
+                    <div className="sub-txt">= {dpMPa} MPaG</div>
+                  </div>
+                  <div className="fg2-item">
+                    <span className="fl2">Design Temp. <b>T</b></span>
+                    <div className="fg2-row">
+                      <input className="fi fi-s" type="number" value={DT} onChange={e=>setDT(e.target.value)}/>
+                      <span className="fu">°C</span>
+                    </div>
+                  </div>
+                </div>
+                {/* 2-col: D, L */}
+                <div className="fg2">
+                  <div className="fg2-item">
+                    <span className="fl2">Inner Diameter <b>D</b></span>
+                    <div className="fg2-row">
+                      <input className="fi fi-s" type="number" value={D} onChange={e=>setD(e.target.value)}/>
+                      <span className="fu">mm</span>
+                    </div>
+                  </div>
+                  <div className="fg2-item">
+                    <span className="fl2">Vessel Length <b>L</b></span>
+                    <div className="fg2-row">
+                      <input className="fi fi-s" type="number" value={L} onChange={e=>setL(e.target.value)}/>
+                      <span className="fu">mm</span>
+                    </div>
+                  </div>
+                </div>
+                {/* 2-col: H, rhoL */}
+                <div className="fg2">
+                  <div className="fg2-item">
+                    <span className="fl2">Liquid Height <b>H</b></span>
+                    <div className="fg2-row">
+                      <input className="fi fi-s" type="number" value={H} onChange={e=>setH(e.target.value)}/>
+                      <span className="fu">mm</span>
+                    </div>
+                  </div>
+                  <div className="fg2-item">
+                    <span className="fl2">Liquid Density <b>ρl</b></span>
+                    <div className="fg2-row">
+                      <input className="fi fi-s" type="number" value={rhoL} onChange={e=>setRhoL(e.target.value)}/>
+                      <span className="fu">kg/m³</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 02 하단 — 용기 형상 미리보기 */}
+            <div className="card" style={{overflow:'hidden'}}>
+              <div className="card-hdr">
+                <div className="badge" style={{background:'#3b62b8',fontSize:9,letterSpacing:0}}>◎</div>
+                <div className="card-title" style={{color:'#3b62b8'}}>형상 미리보기</div>
+                <span style={{marginLeft:'auto',fontSize:9.5,color:'#94a3b8'}}>입력값 실시간 반영</span>
+              </div>
+              <div style={{padding:'6px 10px 8px',background:'#f8faff',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                <Diagram D={parseFloat(D)||2000} L={parseFloat(L)||5000} H={parseFloat(H)||1700} orient={orient}/>
+              </div>
+            </div>
+
+            {/* 03 자동 산정값 */}
+            <div className="card">
+              <div className="card-hdr"><div className="badge">03</div><div className="card-title">자동 산정값 (AUTO-DERIVED)</div></div>
+              <div className="card-body">
+                {/* S full-width (has User checkbox) */}
+                <div className="fr">
+                  <span className="fl">Allowable Stress <b>S</b></span>
+                  <input className={`fi ${useUS?'':'fi-auto'}`} style={useUS?{}:{pointerEvents:'none'}}
+                    type="number" value={useUS?userS:autoS}
+                    onChange={e=>setUserS(e.target.value)}/>
+                  <span className="fu">kg/cm²</span>
+                  <label style={{display:'flex',alignItems:'center',gap:3,fontSize:11,color:'#64748b',whiteSpace:'nowrap',cursor:'pointer'}}>
+                    <input type="checkbox" checked={useUS} onChange={e=>setUseUS(e.target.checked)}/> User
+                  </label>
+                </div>
+                {!useUS&&autoS&&<div className="sub-txt">— {spec.split(',')[0].trim()}, {DT}°C 보간값</div>}
+                {/* 2-col: CA, E */}
+                <div className="fg2">
+                  <div className="fg2-item">
+                    <span className="fl2">Corrosion Allow. <b>CA</b></span>
+                    <div className="fg2-row">
+                      <input className="fi fi-s" type="number" value={CA} onChange={e=>setCA(e.target.value)}/>
+                      <span className="fu">mm</span>
+                    </div>
+                  </div>
+                  <div className="fg2-item">
+                    <span className="fl2">Joint Efficiency <b>E</b></span>
+                    <select className="fi" style={{width:'100%'}} value={E} onChange={e=>setE(e.target.value)}>
+                      <option value="1.00">1.00 Full RT</option>
+                      <option value="0.85">0.85 Spot RT</option>
+                      <option value="0.70">0.70 No RT</option>
+                      <option value="0.65">0.65</option>
+                      <option value="0.60">0.60</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 04 두께 입력 */}
+            <div className="card">
+              <div className="card-hdr">
+                <div className="badge">04</div>
+                <div className="card-title">두께 입력 (THICKNESS INPUT)&nbsp;<span style={{fontWeight:400,color:'#94a3b8',fontSize:11}}>— 선택사항</span></div>
+              </div>
+              <div className="card-body">
+                <div className="fg2">
+                  <div className="fg2-item">
+                    <span className="fl2">Shell Th'k <b>ts</b></span>
+                    <div className="fg2-row">
+                      <input className="fi fi-s" type="number" value={ts_in} onChange={e=>setTsIn(e.target.value)} placeholder="자동"/>
+                      <span className="fu">mm</span>
+                    </div>
+                  </div>
+                  <div className="fg2-item">
+                    <span className="fl2">Head Th'k <b>th</b> (B.F.)</span>
+                    <div className="fg2-row">
+                      <input className="fi fi-s" type="number" value={th_in} onChange={e=>setThIn(e.target.value)} placeholder="자동"/>
+                      <span className="fu">mm</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="warn-txt">※ 비워두면 최소 두께 자동 적용</div>
+              </div>
+            </div>
+
+            {/* 05 보온재 */}
+            <div className="card">
+              <div className="card-hdr"><div className="badge">05</div><div className="card-title">보온재 (INSULATION)</div></div>
+              <div className="card-body">
+                <div className="fg2">
+                  <div className="fg2-item">
+                    <span className="fl2">Density <b>ρi</b></span>
+                    <div className="fg2-row">
+                      <input className="fi fi-s" type="number" value={rhoI} onChange={e=>setRhoI(e.target.value)}/>
+                      <span className="fu">kg/m³</span>
+                    </div>
+                  </div>
+                  <div className="fg2-item">
+                    <span className="fl2">Thickness <b>ti</b></span>
+                    <div className="fg2-row">
+                      <input className="fi fi-s" type="number" value={ti} onChange={e=>setTi(e.target.value)}/>
+                      <span className="fu">mm</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 검토 실행 버튼 — 스크롤 영역 내부 */}
+            <div style={{padding:'4px 0 2px'}}>
+              <button className="btn-calc" onClick={doCalc}>검토 실행 ▶</button>
+              <div className="warn-txt" style={{textAlign:'center',fontSize:10,marginTop:4}}>
+                ※ 기본값은 참고용입니다. 적용 코드/사양으로 재확인하세요.
+              </div>
+            </div>
+
+          </div>{/* /left-scroll */}
+        </div>{/* /left */}
+
+        {/* ═══ RESIZE DIVIDER ═══ */}
+        <div onMouseDown={onDivider}
+             style={{width:5, flexShrink:0, cursor:'col-resize', background:'#d8e0f0',
+                     transition:'background .15s', position:'relative', zIndex:10}}
+             onMouseEnter={e=>e.currentTarget.style.background='#4472c4'}
+             onMouseLeave={e=>e.currentTarget.style.background='#d8e0f0'}>
+          <div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',
+                       color:'#94a3b8',fontSize:14,pointerEvents:'none',userSelect:'none'}}>⋮</div>
+        </div>
+
+        {/* ═══ RIGHT ═══ */}
+        <div className="right">
+
+          {/* Top: title bar */}
+          <div className="res-head-card">
+            <div className="res-head-info">
+              <div className="res-title">검토 결과</div>
+              <div className="res-sub">두께 · MAWP · 부피 · 표면적 · 중량</div>
+            </div>
+          </div>
+
+          {/* Empty state */}
+          {!r && (
+            <div className="empty">
+              <div className="empty-icon">🏭</div>
+              <div className="empty-txt">입력값을 확인하고 검토 실행을 누르면<br/>두께·MAWP·중량 결과가 표시됩니다.</div>
+            </div>
+          )}
+
+          {/* Error */}
+          {r?.err && (
+            <div className="alert alert-err"><span>❌</span>{r.err}</div>
+          )}
+
+          {r && !r.err && <>
+
+            {/* Alert */}
+            {r.warns?.length>0
+              ? <div className="alert alert-warn"><span>⚠️</span><div>{r.warns.map((w,i)=><div key={i}>{w}</div>)}</div></div>
+              : <div className="alert alert-ok"><span>✅</span> 설계 조건 적합 — 경고 없음</div>
+            }
+
+            {/* ── 두께 결과 ── */}
+            <div className="rtbl">
+              <div className="rtbl-hdr-row" style={{gridTemplateColumns:tCols}}>
+                <div className="th lft">두께 결과 (Thickness)</div>
+                <div className="th">허용응력 S<div className="th-sub">kg/cm²</div></div>
+                <div className="th">ts 필요<div className="th-sub">mm (ts')</div></div>
+                <div className="th">ts 사용<div className="th-sub">mm</div></div>
+                <div className="th">th 필요 B.F.<div className="th-sub">mm (th')</div></div>
+                <div className="th">th 필요 A.F.<div className="th-sub">mm (tf')</div></div>
+                <div className="th">th 사용<div className="th-sub">mm</div></div>
+              </div>
+              <div className="dr" style={{gridTemplateColumns:tCols}}>
+                <div className="td lft">{spec.split(',')[0]} · {head}</div>
+                <div className="td"><span className="v">{r.S}</span></div>
+                <div className="td"><span className="v">{r.ts_prime}</span></div>
+                <div className="td"><span className={parseFloat(r.ts_used)>=parseFloat(r.ts_prime)?'v-ok':'v-ng'}>{r.ts_used}</span></div>
+                <div className="td"><span className="v">{r.th_prime}</span></div>
+                <div className="td"><span className="v">{r.tf_prime}</span></div>
+                <div className="td"><span className={parseFloat(r.th_used)>=parseFloat(r.th_prime)?'v-ok':'v-ng'}>{r.th_used}</span></div>
+              </div>
+            </div>
+
+            {/* ── MAWP ── */}
+            <div className="rtbl">
+              <div className="rtbl-hdr-row" style={{gridTemplateColumns:mCols}}>
+                <div className="th lft">MAWP · 정수압</div>
+                <div className="th">Shell MAWP Ms<div className="th-sub">kg/cm²G</div></div>
+                <div className="th">Head MAWP Mh<div className="th-sub">kg/cm²G</div></div>
+                <div className="th">정수압 SPs<div className="th-sub">kg/cm²G</div></div>
+                <div className="th">판정 / Remark</div>
+              </div>
+              <div className="dr" style={{gridTemplateColumns:mCols}}>
+                <div className="td lft">설계압력 P = {DP} kg/cm²G</div>
+                <div className="td"><span className={r.Ms_ok?'v-ok':'v-ng'}>{r.Ms}</span></div>
+                <div className="td"><span className={r.Mh_ok?'v-ok':'v-ng'}>{r.Mh}</span></div>
+                <div className="td"><span className="v">{r.SPs}</span></div>
+                <div className="td"><span className={r.Ms_ok&&r.Mh_ok?'v-ok':'v-ng'}>{r.Ms_ok&&r.Mh_ok?'✔ OK':'✘ NG'}</span></div>
+              </div>
+            </div>
+
+            {/* ── 부피 + 표면적 ── */}
+            <div className="grid2">
+              <div className="rtbl">
+                <div className="rtbl-hdr-row" style={{gridTemplateColumns:vCols}}>
+                  <div className="th lft">부피 (Volume)</div>
+                  <div className="th">기호</div>
+                  <div className="th">Vessel<div className="th-sub">liter</div></div>
+                  <div className="th">Liquid<div className="th-sub">liter</div></div>
+                </div>
+                {[['Shell Volume','Vs',r.Vs_v,r.Vs_l],['Head Volume','Vh',r.Vh_v,r.Vh_l],['Total Volume','V',r.Vt_v,r.Vt_l]].map(([lbl,sym,vv,vl])=>(
+                  <div key={lbl} className="dr" style={{gridTemplateColumns:vCols}}>
+                    <div className="td lft">{lbl}</div>
+                    <div className="td"><span className="v-dim">{sym}</span></div>
+                    <div className="td"><span className="v">{vv}</span></div>
+                    <div className="td"><span className="v">{vl}</span></div>
+                  </div>
+                ))}
+              </div>
+              <div className="rtbl">
+                <div className="rtbl-hdr-row" style={{gridTemplateColumns:'1.5fr .6fr 1fr 1fr 1fr'}}>
+                  <div className="th lft">표면적 (Surface Area)</div>
+                  <div className="th">기호</div>
+                  <div className="th">Material<div className="th-sub">m²</div></div>
+                  <div className="th">Painting<div className="th-sub">m²</div></div>
+                  <div className="th">Insulation<div className="th-sub">m²</div></div>
+                </div>
+                {[['Shell Surf.','As',r.As,r.As_p,r.As_i],['Head Surf. (×2)','Ah',r.Ah,r.Ah_p,r.Ah_i],['Total Surf.','At',r.At,r.At_p,r.At_i]].map(([lbl,sym,vm,vp,vi])=>(
+                  <div key={lbl} className="dr" style={{gridTemplateColumns:'1.5fr .6fr 1fr 1fr 1fr'}}>
+                    <div className="td lft">{lbl}</div>
+                    <div className="td"><span className="v-dim">{sym}</span></div>
+                    <div className="td"><span className="v">{vm}</span></div>
+                    <div className="td"><span className="v">{vp}</span></div>
+                    <div className="td"><span className="v">{vi}</span></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ── 중량 ── */}
+            <div className="rtbl">
+              <div className="rtbl-hdr-row" style={{gridTemplateColumns:wCols}}>
+                <div className="th lft">중량 (Weight)</div>
+                <div className="th">Shell Ws<div className="th-sub">kg</div></div>
+                <div className="th">Head Wh<div className="th-sub">kg</div></div>
+                <div className="th">Net Total Wt<div className="th-sub">kg</div></div>
+                <div className="th">공운전 We<div className="th-sub">kg</div></div>
+                <div className="th">운전중 Wo<div className="th-sub">kg</div></div>
+              </div>
+              <div className="dr" style={{gridTemplateColumns:wCols}}>
+                <div className="td lft">ρm {r.den} kg/m³ &nbsp;|&nbsp; 보온재 Wi = {r.Wi} kg</div>
+                <div className="td"><span className="v">{r.Ws}</span></div>
+                <div className="td"><span className="v">{r.Wh}</span></div>
+                <div className="td"><span className="v">{r.Wt}</span></div>
+                <div className="td"><span className="v">{r.We}</span></div>
+                <div className="td"><span className="v">{r.Wo}</span></div>
+              </div>
+            </div>
+
+            <div className="ref-bar">
+              계산식: ts = P·R / (S·E − 0.6P) &nbsp;[UG-27] &nbsp;|&nbsp; th = P·D / (2·S·E − 0.2P) &nbsp;[UG-32] &nbsp;|&nbsp; MAWP = S·E·t / (R + 0.6t)
+              &nbsp;|&nbsp; B.F. = Before Forming / A.F. = After Forming (12.5% 감육 고려) &nbsp;|&nbsp;
+              허용응력(S): ASME BPVC Sec.II Part D Table 1A/1B · UCS-23 · UHA-23 보간값 (kgf/cm²) — 적용 에디션으로 재확인 필요.
+            </div>
+          </>}
+
+        </div>{/* /right */}
+      </div>{/* /root */}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

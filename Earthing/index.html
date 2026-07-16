@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Earthing · 변전소 접지망 설계 (IEEE Std 80-2013)</title>
+<style>
+  :root{
+    --bg:#eef0f5; --card:#ffffff; --ink:#0f172a; --sub:#5a6680; --mute:#8f9ab5;
+    --line:#dde2ed; --accent:#1a3a6b; --accent2:#2451a0; --accent-soft:#e8edf8;
+    --ok:#16a34a; --ok-soft:#dcfce7; --bad:#dc2626; --bad-soft:#fee2e2;
+    --out-bg:#edf1fa; --out-ink:#1a3a6b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Inter","Segoe UI",-apple-system,"Malgun Gothic","Apple SD Gothic Neo",sans-serif;
+    font-size:14px;line-height:1.4;-webkit-font-smoothing:antialiased}
+  /* Header */
+  header{position:sticky;top:0;z-index:30;background:linear-gradient(100deg,#152d5a,#1e3f7a 60%,#2451a0);
+    color:#fff;padding:14px 22px;box-shadow:0 2px 14px rgba(21,45,90,.35)}
+  .hwrap{max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:12px;flex:1 1 auto;min-width:0}
+  .logo{width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.18);
+    display:grid;place-items:center;flex:none}
+  .logo svg{width:22px;height:22px}
+  .brand h1{font-size:18px;margin:0;font-weight:700;letter-spacing:.2px}
+  .brand p{margin:1px 0 0;font-size:12px;opacity:.85}
+  .htools{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .badge-ver{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.3);
+    padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600}
+  .toggle{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;cursor:pointer;user-select:none}
+  .toggle input{display:none}
+  .switch{width:38px;height:21px;border-radius:20px;background:rgba(255,255,255,.3);position:relative;transition:.2s}
+  .switch::after{content:"";position:absolute;top:2px;left:2px;width:17px;height:17px;border-radius:50%;background:#fff;transition:.2s}
+  .toggle input:checked + .switch{background:#22c55e}
+  .toggle input:checked + .switch::after{transform:translateX(17px)}
+  .btn{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.32);color:#fff;
+    padding:6px 13px;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;transition:.15s}
+  .btn:hover{background:rgba(255,255,255,.28)}
+
+  /* Verdict summary */
+  .verdict{max-width:1280px;margin:18px auto 0;padding:0 22px;display:grid;
+    grid-template-columns:repeat(3,1fr);gap:14px}
+  .vcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;
+    display:flex;align-items:center;gap:14px;box-shadow:0 1px 3px rgba(15,23,42,.05)}
+  .vcard .ic{width:42px;height:42px;border-radius:11px;display:grid;place-items:center;flex:none;font-size:20px}
+  .vcard .meta-t{font-size:12px;color:var(--sub)}
+  .vcard .meta-v{font-size:15px;font-weight:700;margin-top:2px}
+  .vcard .pill{margin-left:auto;font-size:12px;font-weight:800;padding:5px 12px;border-radius:20px;letter-spacing:.4px}
+  .pass{color:var(--ok);background:var(--ok-soft)} .fail{color:var(--bad);background:var(--bad-soft)}
+  .ic.gp{background:#eef2ff;color:#4f46e5} .ic.mp{background:#ecfeff;color:#0891b2} .ic.sp{background:#fff7ed;color:#ea580c}
+
+  /* Layout */
+  main{max-width:1280px;margin:18px auto 60px;padding:0 22px;display:grid;
+    grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+  @media(max-width:920px){main{grid-template-columns:1fr}.verdict{grid-template-columns:1fr}}
+  .col{display:flex;flex-direction:column;gap:18px}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;
+    box-shadow:0 1px 3px rgba(15,23,42,.05);overflow:hidden}
+  .chead{display:flex;align-items:center;gap:11px;padding:13px 16px;border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg,#f8f9fd,#eef1f8)}
+  .num{width:27px;height:27px;border-radius:8px;background:var(--accent);color:#fff;font-weight:800;
+    font-size:13px;display:grid;place-items:center;flex:none}
+  .ctitle{display:flex;flex-direction:column;min-width:0}
+  .ctitle b{font-size:14px}
+  .ctitle span{font-size:11.5px;color:var(--sub)}
+  .para{margin-left:auto;font-size:10.5px;color:var(--mute);background:#f1f5f9;border:1px solid var(--line);
+    padding:3px 8px;border-radius:6px;white-space:nowrap}
+  .cbody{padding:6px 16px 12px}
+
+  .row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px dashed #eef2f7}
+  .row:last-child{border-bottom:none}
+  .lab{flex:1 1 auto;min-width:0}
+  .lab b{font-weight:600;font-size:13px;display:block;line-height:1.25}
+  .lab i{font-style:normal;font-size:11px;color:var(--sub);display:block}
+  .meta{flex:0 0 88px;width:88px;text-align:right;font-size:12.5px;color:#475569;font-weight:600}
+  .meta u{text-decoration:none;color:var(--mute);font-weight:400}
+  input.in,select.in{flex:0 0 118px;width:118px;font-size:13.5px;padding:7px 9px;border:1px solid #cbd5e1;
+    border-radius:8px;background:#fff;color:var(--ink);font-family:inherit;text-align:right}
+  select.in{text-align:left}
+  input.in:focus,select.in:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,70,229,.13)}
+  input.in:disabled{background:#f1f5f9;color:#94a3b8}
+  output.out{flex:0 0 118px;width:118px;font-size:13.5px;font-weight:700;padding:7px 9px;border-radius:8px;
+    background:var(--out-bg);color:var(--out-ink);text-align:right;border:1px solid #e0e7ff;min-height:33px;
+    display:flex;align-items:center;justify-content:flex-end}
+  .row.sel{flex-wrap:wrap}
+  select.wide{flex:1 1 auto;width:auto;min-width:160px;text-align:left}
+  .addon{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--sub);flex:none}
+  .addon input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent)}
+  .hint{font-size:11px;color:var(--mute);flex:none}
+
+  /* requirement row */
+  .req{display:flex;align-items:center;gap:10px;margin-top:8px;padding:11px 13px;border-radius:11px;
+    background:#f8fafc;border:1px solid var(--line)}
+  .req b{font-size:13px}
+  .req .formula{font-size:12px;color:var(--sub);font-family:"Consolas",monospace}
+  .req .res{margin-left:auto;font-weight:800;font-size:12.5px;padding:5px 13px;border-radius:20px;letter-spacing:.4px}
+
+  /* grid diagram */
+  .diagram{display:flex;gap:16px;align-items:center;padding-top:6px;flex-wrap:wrap}
+  .diagram svg{background:#fbfdff;border:1px solid var(--line);border-radius:10px}
+  .dnote{font-size:11.5px;color:var(--sub);flex:1;min-width:120px}
+  .dnote div{margin:3px 0}
+  .dnote .k{color:var(--mute)}
+
+  .detail-hidden .detail{display:none}
+  footer{max-width:1280px;margin:0 auto;padding:0 22px 40px;color:var(--mute);font-size:11.5px}
+  footer code{background:#e8edf5;padding:1px 5px;border-radius:4px}
+
+  /* Help Button */
+  .btn-help{background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.4);color:#fff;
+    padding:6px 14px;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;transition:.15s;
+    display:inline-flex;align-items:center;gap:5px}
+  .btn-help:hover{background:rgba(255,255,255,.35)}
+
+  /* Modal overlay */
+  .modal-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.48);z-index:200;
+    display:flex;align-items:center;justify-content:center;padding:16px;
+    opacity:0;pointer-events:none;transition:opacity .2s}
+  .modal-backdrop.open{opacity:1;pointer-events:all}
+  .modal-box{background:#fff;border-radius:18px;box-shadow:0 24px 64px rgba(15,23,42,.22);
+    width:100%;max-width:780px;max-height:90vh;display:flex;flex-direction:column;
+    transform:translateY(18px);transition:transform .2s;overflow:hidden}
+  .modal-backdrop.open .modal-box{transform:translateY(0)}
+  .modal-hd{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg,#fafbff,#f4f5fb);flex-shrink:0}
+  .modal-hd h2{margin:0;font-size:16px;font-weight:700;flex:1}
+  .modal-hd .modal-close{background:none;border:none;font-size:20px;cursor:pointer;
+    color:var(--mute);line-height:1;padding:4px 8px;border-radius:6px;transition:.15s}
+  .modal-hd .modal-close:hover{background:#f1f5f9;color:var(--ink)}
+  .modal-edit-btn{background:var(--accent-soft);border:1px solid #c7d2fe;color:var(--accent);
+    padding:5px 12px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;transition:.15s;
+    display:inline-flex;align-items:center;gap:4px}
+  .modal-edit-btn:hover{background:#e0e7ff}
+  .modal-edit-btn.active{background:#fef9c3;border-color:#fde047;color:#854d0e}
+  .modal-body{overflow-y:auto;padding:20px 24px;flex:1}
+  .modal-footer{padding:12px 20px;border-top:1px solid var(--line);display:flex;align-items:center;
+    gap:10px;flex-shrink:0;background:#fafbff}
+
+  /* Edit mode banner */
+  .edit-banner{background:#fef9c3;border-bottom:2px solid #fde047;padding:9px 20px;
+    font-size:12.5px;font-weight:600;color:#854d0e;display:none;align-items:center;gap:8px;flex-shrink:0}
+  .edit-banner.show{display:flex}
+
+  /* Download button */
+  .btn-dl{background:var(--accent);border:none;color:#fff;padding:8px 16px;border-radius:8px;
+    font-size:13px;font-weight:700;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:6px}
+  .btn-dl:hover{background:#4338ca}
+  .btn-reset-help{background:#f1f5f9;border:1px solid var(--line);color:var(--ink);
+    padding:6px 12px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;transition:.15s}
+  .btn-reset-help:hover{background:#e2e8f0}
+  .dl-ok{font-size:12.5px;color:var(--ok);font-weight:700;display:none}
+  .dl-ok.show{display:inline}
+
+  /* Help content styles */
+  .help-section{margin-bottom:22px}
+  .help-section h3{font-size:14px;font-weight:700;margin:0 0 8px;color:var(--ink);
+    padding-bottom:6px;border-bottom:1px solid var(--line)}
+  .help-text{font-size:13.5px;line-height:1.7;color:#334155}
+  .help-note{background:#fff7ed;border-left:3px solid #f97316;border-radius:0 8px 8px 0;
+    padding:9px 14px;font-size:13px;color:#7c2d12;line-height:1.6}
+  .help-formula{background:#f5f3ff;border:1px solid #ddd6fe;border-radius:8px;
+    padding:10px 14px;font-family:"Consolas",monospace;font-size:13px;color:#3730a3;line-height:1.8}
+  .help-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:4px}
+  .help-table th{background:#f1f5f9;padding:8px 12px;text-align:left;font-weight:600;
+    border:1px solid var(--line);color:#475569}
+  .help-table td{padding:7px 12px;border:1px solid var(--line);vertical-align:top;line-height:1.5}
+  .help-table tr:nth-child(even) td{background:#fafbff}
+  [contenteditable=true]{outline:2px dashed #fde047;border-radius:3px;min-width:20px;
+    padding:1px 2px;cursor:text}
+  [contenteditable=true]:focus{outline:2px solid #f59e0b;background:#fffbeb}
+</style>
+</head>
+<body>
+<header>
+  <div class="hwrap">
+    <div class="brand">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2v6"/><path d="M5 8h14"/><path d="M7 8v3"/><path d="M12 8v5"/><path d="M17 8v3"/>
+          <path d="M4 13h16"/><path d="M6 13v2"/><path d="M18 13v2"/><path d="M9 18h6"/><path d="M12 18v3"/>
+        </svg>
+      </div>
+      <div>
+        <h1>Earthing · 변전소 접지망 설계</h1>
+        <p>Substation Grounding Grid Design — IEEE Std 80-2013</p>
+      </div>
+    </div>
+    <div class="htools">
+      <span class="badge-ver">v1.0</span>
+      <label class="toggle"><input type="checkbox" id="showAll" checked><span class="switch"></span>
+        Show All Steps · 전체 단계</label>
+      <button class="btn" id="resetBtn">Reset · 예제값</button>
+      <button class="btn-help" id="helpBtn">도움말</button>
+    </div>
+  </div>
+</header>
+
+<!-- Help Modal -->
+<div class="modal-backdrop" id="helpModal">
+  <div class="modal-box">
+    <div class="modal-hd">
+      <h2>📖 도움말 · Help</h2>
+      <button class="modal-edit-btn" id="editToggleBtn">✏️ 편집</button>
+      <button class="modal-close" id="helpClose">✕</button>
+    </div>
+    <div class="edit-banner" id="editBanner">
+      ✏️ 편집 모드 — 텍스트 또는 표 셀을 클릭하여 직접 수정하세요.
+      <button class="btn-reset-help" id="resetHelpBtn" style="margin-left:auto">↩ 초기화</button>
+    </div>
+    <div class="modal-body" id="helpBody"></div>
+    <div class="modal-footer" id="helpFooter" style="display:none">
+      <button class="btn-dl" id="dlBtn">💾 저장 후 다운로드 (index.html)</button>
+      <span class="dl-ok" id="dlOk">✅ 다운로드 완료!</span>
+    </div>
+  </div>
+</div>
+
+<!-- Verdict summary -->
+<section class="verdict">
+  <div class="vcard"><div class="ic gp">⚡</div>
+    <div><div class="meta-t">GPR Check · 대지전위상승</div><div class="meta-v" id="v-gpr">–</div></div>
+    <div class="pill" id="p-gpr">–</div></div>
+  <div class="vcard"><div class="ic mp">▦</div>
+    <div><div class="meta-t">Mesh Voltage · 메시전압</div><div class="meta-v" id="v-mesh">–</div></div>
+    <div class="pill" id="p-mesh">–</div></div>
+  <div class="vcard"><div class="ic sp">👣</div>
+    <div><div class="meta-t">Step Voltage · 보폭전압</div><div class="meta-v" id="v-step">–</div></div>
+    <div class="pill" id="p-step">–</div></div>
+</section>
+
+<main id="main">
+  <!-- LEFT COLUMN: Steps 1-4 -->
+  <div class="col">
+
+    <!-- Step 1 -->
+    <div class="card">
+      <div class="chead"><div class="num">1</div>
+        <div class="ctitle"><b>Field Data</b><span>현장 데이터</span></div></div>
+      <div class="cbody">
+        <div class="row"><div class="lab"><b>Resistivity of Soil</b><i>대지 고유저항</i></div>
+          <div class="meta">ρ <u>(Ω·m)</u></div><input class="in" id="rho" type="number" step="any" value="308.87"></div>
+        <div class="row"><div class="lab"><b>Area of Grid</b><i>접지망 면적</i></div>
+          <div class="meta">A <u>(m²)</u></div><output class="out" id="A"></output></div>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="card">
+      <div class="chead"><div class="num">2</div>
+        <div class="ctitle"><b>Conductor Size</b><span>도체 굵기 산정</span></div>
+        <div class="para">Para 11.3</div></div>
+      <div class="cbody">
+        <div class="row"><div class="lab"><b>RMS Fault Current</b><i>고장전류 실효값</i></div>
+          <div class="meta">I <u>(kA)</u></div><input class="in" id="I" type="number" step="any" value="40"></div>
+        <div class="row"><div class="lab"><b>Ambient Temperature</b><i>주위 온도</i></div>
+          <div class="meta">Ta <u>(℃)</u></div><input class="in" id="Ta" type="number" step="any" value="40"></div>
+        <div class="row"><div class="lab"><b>Duration of Fault Current</b><i>고장전류 지속시간</i></div>
+          <div class="meta">tc <u>(s)</u></div><input class="in" id="tc" type="number" step="any" value="0.2"></div>
+        <div class="row sel"><div class="lab"><b>Conductor Material</b><i>도체 재질</i></div>
+          <select class="in wide" id="material"></select></div>
+        <div class="row detail"><div class="lab"><b>Max. Allowable Temperature</b><i>최대 허용온도</i></div>
+          <div class="meta">Tm <u>(℃)</u></div><output class="out" id="Tm"></output></div>
+        <div class="row detail"><div class="lab"><b>Reference Temperature</b><i>재료상수 기준온도</i></div>
+          <div class="meta">Tr <u>(℃)</u></div><output class="out" id="Tr"></output></div>
+        <div class="row detail"><div class="lab"><b>Thermal Coeff. of Resistivity</b><i>저항 열계수 (at Tr)</i></div>
+          <div class="meta">αr <u>(/℃)</u></div><output class="out" id="ar"></output></div>
+        <div class="row detail"><div class="lab"><b>Resistivity of Conductor</b><i>도체 저항률 (at Tr)</i></div>
+          <div class="meta">ρr <u>(μΩ·cm)</u></div><output class="out" id="rhor"></output></div>
+        <div class="row detail"><div class="lab"><b>1/αr − Tr</b><i>온도상수</i></div>
+          <div class="meta">Ko <u>(℃)</u></div><output class="out" id="Ko"></output></div>
+        <div class="row detail"><div class="lab"><b>Thermal Capacity / Volume</b><i>단위체적당 열용량</i></div>
+          <div class="meta">TCAP <u>(J/cm³℃)</u></div><output class="out" id="TCAP"></output></div>
+        <div class="row"><div class="lab"><b>Cross Section Area (Required)</b><i>도체 단면적 (소요)</i></div>
+          <div class="meta">A' <u>(mm²)</u></div><output class="out" id="AmmReq"></output></div>
+        <div class="row sel"><div class="lab"><b>Cross Section Area (Applied)</b><i>도체 단면적 (적용)</i></div>
+          <div class="meta">A <u>(mm²)</u></div><input class="in" id="Amm" type="number" step="any" value="120">
+          <label class="addon"><input type="checkbox" id="userArea" checked>User</label></div>
+        <div class="row"><div class="lab"><b>Conductor Diameter</b><i>도체 직경</i></div>
+          <div class="meta">d <u>(m)</u></div><output class="out" id="d"></output></div>
+      </div>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="card">
+      <div class="chead"><div class="num">3</div>
+        <div class="ctitle"><b>Step &amp; Touch Voltage Criteria</b><span>보폭·접촉전압 허용기준</span></div>
+        <div class="para">Para 8.4</div></div>
+      <div class="cbody">
+        <div class="row"><div class="lab"><b>Resistivity of Soil</b><i>대지 고유저항</i></div>
+          <div class="meta">ρ <u>(Ω·m)</u></div><output class="out" id="rho3"></output></div>
+        <div class="row"><div class="lab"><b>Resistivity of Surface Layer</b><i>표층 고유저항</i></div>
+          <div class="meta">ρs <u>(Ω·m)</u></div><input class="in" id="rhos" type="number" step="any" value="10000"></div>
+        <div class="row"><div class="lab"><b>Thickness of Surface Layer</b><i>표층 두께</i></div>
+          <div class="meta">hs <u>(m)</u></div><input class="in" id="hs" type="number" step="any" value="0.3"></div>
+        <div class="row detail"><div class="lab"><b>Surface Layer Derating Factor</b><i>표층 저감계수</i></div>
+          <div class="meta">Cs</div><output class="out" id="Cs"></output></div>
+        <div class="row sel"><div class="lab"><b>Duration of Shock Current</b><i>감전전류 지속시간</i></div>
+          <div class="meta">ts <u>(s)</u></div><input class="in" id="ts" type="number" step="any" value="0.2" disabled>
+          <label class="addon"><input type="checkbox" id="tsUser">User</label>
+          <span class="hint">(미체크 = tc)</span></div>
+        <div class="row sel"><div class="lab"><b>Body Weight</b><i>인체 체중</i></div>
+          <select class="in" id="bodyWeight"><option value="50">50 kg</option><option value="70">70 kg</option></select></div>
+        <div class="row"><div class="lab"><b>Tolerable Step Voltage</b><i>허용 보폭전압</i></div>
+          <div class="meta">Estep50 <u>(V)</u></div><output class="out" id="Estep"></output></div>
+        <div class="row"><div class="lab"><b>Tolerable Touch Voltage</b><i>허용 접촉전압</i></div>
+          <div class="meta">Etouch50 <u>(V)</u></div><output class="out" id="Etouch"></output></div>
+      </div>
+    </div>
+
+    <!-- Step 4 -->
+    <div class="card">
+      <div class="chead"><div class="num">4</div>
+        <div class="ctitle"><b>Initial Design</b><span>초기 설계 (직사각형 격자)</span></div>
+        <div class="para">Para 16.5.1</div></div>
+      <div class="cbody">
+        <div class="row"><div class="lab"><b>Max. Length in x-Direction</b><i>x방향 최대 길이</i></div>
+          <div class="meta">Lx <u>(m)</u></div><input class="in" id="Lx" type="number" step="any" value="95"></div>
+        <div class="row"><div class="lab"><b>Max. Length in y-Direction</b><i>y방향 최대 길이</i></div>
+          <div class="meta">Ly <u>(m)</u></div><input class="in" id="Ly" type="number" step="any" value="310"></div>
+        <div class="row"><div class="lab"><b>Spacing between Conductors</b><i>병렬 도체 간격</i></div>
+          <div class="meta">D <u>(m)</u></div><input class="in" id="D" type="number" step="any" value="17"></div>
+        <div class="row"><div class="lab"><b>Total Length of Conductor</b><i>도체 총 길이</i></div>
+          <div class="meta">LC <u>(m)</u></div><input class="in" id="LC" type="number" step="any" value="3900"></div>
+        <div class="row"><div class="lab"><b>Area of Grid</b><i>접지망 면적</i></div>
+          <div class="meta">A <u>(m²)</u></div><output class="out" id="A4"></output></div>
+        <div class="row"><div class="lab"><b>Peripheral Length of Grid</b><i>접지망 둘레 길이</i></div>
+          <div class="meta">Lp <u>(m)</u></div><output class="out" id="Lp"></output></div>
+        <div class="row detail"><div class="lab"><b>Max. Distance b/w Two Points</b><i>두 점 간 최대거리</i></div>
+          <div class="meta">Dm <u>(m)</u></div><output class="out" id="Dm"></output></div>
+        <div class="row detail"><div class="lab"><b>na, nb</b><i>기하 계수</i></div>
+          <div class="meta"></div><output class="out" id="nanb"></output></div>
+        <div class="row detail"><div class="lab"><b>nc, nd</b><i>기하 계수</i></div>
+          <div class="meta"></div><output class="out" id="ncnd"></output></div>
+        <div class="row"><div class="lab"><b>Geometric Factor</b><i>기하학적 계수</i></div>
+          <div class="meta">n</div><output class="out" id="n"></output></div>
+        <div class="diagram">
+          <svg id="gridSvg" width="170" height="240" viewBox="0 0 170 240"></svg>
+          <div class="dnote">
+            <div><span class="k">x:</span> <span id="dx"></span> m &nbsp; <span class="k">y:</span> <span id="dy"></span> m</div>
+            <div><span class="k">mesh:</span> <span id="dmesh"></span></div>
+            <div><span class="k">spacing D:</span> <span id="dsp"></span> m</div>
+            <div class="k" style="margin-top:6px">근사 평면도 (Plan view, to scale)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT COLUMN: Steps 5-10 -->
+  <div class="col">
+
+    <!-- Step 5 -->
+    <div class="card">
+      <div class="chead"><div class="num">5</div>
+        <div class="ctitle"><b>Grid Resistance</b><span>접지망 저항</span></div>
+        <div class="para">Para 14.2</div></div>
+      <div class="cbody">
+        <div class="row"><div class="lab"><b>Grid Depth</b><i>매설 깊이</i></div>
+          <div class="meta">h <u>(m)</u></div><input class="in" id="h" type="number" step="any" value="0.8"></div>
+        <div class="row"><div class="lab"><b>Total Length of Rod</b><i>접지봉 총 길이</i></div>
+          <div class="meta">LR <u>(m)</u></div><input class="in" id="LR" type="number" step="any" value="0"></div>
+        <div class="row detail"><div class="lab"><b>Total Length Conductor + Rod</b><i>도체+접지봉 총 길이</i></div>
+          <div class="meta">LT <u>(m)</u></div><output class="out" id="LT"></output></div>
+        <div class="row"><div class="lab"><b>Grid Resistance</b><i>접지망 저항</i></div>
+          <div class="meta">Rg <u>(Ω)</u></div><output class="out" id="Rg"></output></div>
+      </div>
+    </div>
+
+    <!-- Step 6 -->
+    <div class="card">
+      <div class="chead"><div class="num">6</div>
+        <div class="ctitle"><b>Grid Current</b><span>접지망 전류</span></div>
+        <div class="para">Para 15.1</div></div>
+      <div class="cbody">
+        <div class="row"><div class="lab"><b>Symmetrical Fault Current</b><i>대칭 고장전류</i></div>
+          <div class="meta">If <u>(A)</u></div><input class="in" id="If" type="number" step="any" value="40000"></div>
+        <div class="row"><div class="lab"><b>Fault Current Division Factor</b><i>고장전류 분류계수</i></div>
+          <div class="meta">Sf</div><input class="in" id="Sf" type="number" step="any" value="0.08"></div>
+        <div class="row detail"><div class="lab"><b>Symmetrical Grid Current</b><i>대칭 접지망 전류</i></div>
+          <div class="meta">Ig <u>(A)</u></div><output class="out" id="Ig"></output></div>
+        <div class="row"><div class="lab"><b>Decrement Factor</b><i>감쇠계수</i></div>
+          <div class="meta">Df</div><input class="in" id="Df" type="number" step="any" value="1.064"></div>
+        <div class="row"><div class="lab"><b>Maximum Grid Current</b><i>최대 접지망 전류</i></div>
+          <div class="meta">IG <u>(A)</u></div><output class="out" id="IG"></output></div>
+      </div>
+    </div>
+
+    <!-- Step 7 -->
+    <div class="card">
+      <div class="chead"><div class="num">7</div>
+        <div class="ctitle"><b>Ground Potential Rise Check</b><span>대지전위상승 검토</span></div></div>
+      <div class="cbody">
+        <div class="row"><div class="lab"><b>Ground Potential Rise (IG·Rg)</b><i>대지전위상승</i></div>
+          <div class="meta">GPR <u>(V)</u></div><output class="out" id="GPR"></output></div>
+        <div class="row"><div class="lab"><b>Tolerable Touch Voltage</b><i>허용 접촉전압</i></div>
+          <div class="meta">Etouch50 <u>(V)</u></div><output class="out" id="Etouch7"></output></div>
+        <div class="req"><b>Requirement</b><span class="formula">GPR &lt; Etouch50</span>
+          <span class="res" id="r-gpr">–</span></div>
+        <div class="hint" style="margin-top:7px">통과 시 추가 메시 해석 불필요 (안전). 불통과 시 Step 8~10 검토.</div>
+      </div>
+    </div>
+
+    <!-- Step 8 -->
+    <div class="card">
+      <div class="chead"><div class="num">8</div>
+        <div class="ctitle"><b>Mesh &amp; Step Voltage</b><span>메시·보폭 전압</span></div>
+        <div class="para">Para 16.5</div></div>
+      <div class="cbody">
+        <div class="row sel"><div class="lab"><b>Rod Arrangement</b><i>접지봉 배치</i></div>
+          <select class="in wide" id="rodArrangement">
+            <option value="few">No Rods / A Few Rods · 없음/소수</option>
+            <option value="corners">Rods in Corners &amp; Perimeter · 코너·둘레</option>
+          </select></div>
+        <div class="row"><div class="lab"><b>Length of Each Rod</b><i>접지봉 1본 길이</i></div>
+          <div class="meta">Lr <u>(m)</u></div><input class="in" id="Lr" type="number" step="any" value="0" disabled></div>
+        <div class="row detail"><div class="lab"><b>Corner-Mesh Weighting Factor</b><i>코너메시 내부도체 가중</i></div>
+          <div class="meta">Kii</div><output class="out" id="Kii"></output></div>
+        <div class="row detail"><div class="lab"><b>Grid-Depth Weighting Factor</b><i>매설깊이 가중계수</i></div>
+          <div class="meta">Kh</div><output class="out" id="Kh"></output></div>
+        <div class="row detail"><div class="lab"><b>Irregularity Factor</b><i>형상 불규칙 계수</i></div>
+          <div class="meta">Ki</div><output class="out" id="Ki"></output></div>
+        <div class="row detail"><div class="lab"><b>Eff. Length for Mesh Voltage</b><i>메시전압 유효길이</i></div>
+          <div class="meta">LM <u>(m)</u></div><output class="out" id="LM"></output></div>
+        <div class="row detail"><div class="lab"><b>Spacing Factor for Mesh</b><i>메시전압 간격계수</i></div>
+          <div class="meta">Km</div><output class="out" id="Km"></output></div>
+        <div class="row"><div class="lab"><b>Mesh Voltage</b><i>메시전압</i></div>
+          <div class="meta">Em <u>(V)</u></div><output class="out" id="Em"></output></div>
+        <div class="row detail"><div class="lab"><b>Eff. Length for Step Voltage</b><i>보폭전압 유효길이</i></div>
+          <div class="meta">LS <u>(m)</u></div><output class="out" id="LS"></output></div>
+        <div class="row detail"><div class="lab"><b>Spacing Factor for Step</b><i>보폭전압 간격계수</i></div>
+          <div class="meta">Ks</div><output class="out" id="Ks"></output></div>
+        <div class="row"><div class="lab"><b>Step Voltage</b><i>보폭전압</i></div>
+          <div class="meta">Es <u>(V)</u></div><output class="out" id="Es"></output></div>
+      </div>
+    </div>
+
+    <!-- Step 9 -->
+    <div class="card">
+      <div class="chead"><div class="num">9</div>
+        <div class="ctitle"><b>Mesh Voltage Check</b><span>메시전압 검토</span></div></div>
+      <div class="cbody">
+        <div class="row"><div class="lab"><b>Mesh Voltage</b><i>메시전압</i></div>
+          <div class="meta">Em <u>(V)</u></div><output class="out" id="Em9"></output></div>
+        <div class="row"><div class="lab"><b>Tolerable Touch Voltage</b><i>허용 접촉전압</i></div>
+          <div class="meta">Etouch50 <u>(V)</u></div><output class="out" id="Etouch9"></output></div>
+        <div class="req"><b>Requirement</b><span class="formula">Em &lt; Etouch50</span>
+          <span class="res" id="r-mesh">–</span></div>
+      </div>
+    </div>
+
+    <!-- Step 10 -->
+    <div class="card">
+      <div class="chead"><div class="num">10</div>
+        <div class="ctitle"><b>Step Voltage Check</b><span>보폭전압 검토</span></div></div>
+      <div class="cbody">
+        <div class="row"><div class="lab"><b>Step Voltage</b><i>보폭전압</i></div>
+          <div class="meta">Es <u>(V)</u></div><output class="out" id="Es10"></output></div>
+        <div class="row"><div class="lab"><b>Tolerable Step Voltage</b><i>허용 보폭전압</i></div>
+          <div class="meta">Estep50 <u>(V)</u></div><output class="out" id="Estep10"></output></div>
+        <div class="req"><b>Requirement</b><span class="formula">Es &lt; Estep50</span>
+          <span class="res" id="r-step">–</span></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  Reference: (1) IEEE Std 80-2013, "Guide for Safety in AC Substation Grounding".
+  본 도구는 직사각형 격자(rectangular grid) 가정으로 계산합니다. 입력값을 바꾸면 즉시 재계산됩니다.
+</footer>
+
+<script>
+/* ================================================================
+   ★ 이 블록만 수정하세요 (HELP_CONTENT START)
+   ================================================================ */
+const HELP_CONTENT = {
+  title: "변전소 접지망 설계 도움말",
+  sections: [
+    {
+      id: "overview",
+      heading: "앱 개요",
+      type: "text",
+      content: "본 앱은 **IEEE Std 80-2013** 기반의 변전소 접지망(Grounding Grid) 설계 계산기입니다. Step 1~10까지 순서대로 입력하면 접지저항, GPR, 메시전압, 보폭전압의 PASS/FAIL 여부를 자동으로 산출합니다. 결과는 **예비 검토 목적**으로만 활용하십시오."
+    },
+    {
+      id: "inputs",
+      heading: "주요 입력 항목",
+      type: "table",
+      headers: ["Step", "파라미터", "설명", "단위"],
+      rows: [
+        ["1", "ρ (rho)", "대지 고유저항 — 현장 측정값 입력", "Ω·m"],
+        ["2", "I", "RMS 고장전류 — 도체 열용량 계산 기준", "kA"],
+        ["2", "tc", "고장전류 지속시간", "s"],
+        ["3", "ρs (rhos)", "표층 자갈층 고유저항", "Ω·m"],
+        ["3", "hs", "표층 자갈층 두께", "m"],
+        ["4", "Lx / Ly", "접지망 가로 / 세로 길이", "m"],
+        ["4", "D", "도체 간격(메시 크기)", "m"],
+        ["6", "If", "대칭 고장전류 (기본값: Step 2 I×1000)", "A"],
+        ["6", "Sf", "고장전류 분류계수", "–"],
+        ["6", "Df", "감쇠계수", "–"]
+      ]
+    },
+    {
+      id: "flow",
+      heading: "계산 흐름 요약",
+      type: "formula",
+      content: "Step1(현장) → Step2(도체규격) → Step3(허용전압) → Step4(설계)\n→ Step5(Rg) → Step6(접지전류) → Step7(GPR) → Step8(Em,Es)\n→ Step9(메시전압 검토) → Step10(보폭전압 검토)"
+    },
+    {
+      id: "notes",
+      heading: "주의사항",
+      type: "note",
+      content: "⚠️ 본 결과는 **예비 검토 목적**으로만 사용하십시오. 실제 설계에는 전문 엔지니어의 검토 및 현장 실측 데이터가 필요합니다. IEEE 80-2013 원문과 반드시 대조하시기 바랍니다."
+    }
+  ]
+};
+/* ================================================================
+   ★ 이 블록만 수정하세요 (HELP_CONTENT END)
+}; // end HELP_CONTENT
+   ================================================================ */
+
+/* ===== Help Modal Logic ===== */
+(function(){
+  var editMode = false;
+  var ORIGINAL = JSON.parse(JSON.stringify(HELP_CONTENT));
+
+  function parseBold(str){
+    return str.split("**").map(function(s,i){ return i%2===1 ? "<strong>"+s+"</strong>" : s; }).join("");
+  }
+
+  function buildContent(editable){
+    var ce = editable ? " contenteditable='true' spellcheck='false'" : "";
+    var html = "";
+    HELP_CONTENT.sections.forEach(function(sec){
+      html += "<div class='help-section'>";
+      html += "<h3"+ce+" data-field='heading' data-id='"+sec.id+"'>"+parseBold(sec.heading)+"</h3>";
+      if(sec.type==="text"){
+        html += "<div class='help-text'"+ce+" data-field='content' data-id='"+sec.id+"'>"+parseBold(sec.content)+"</div>";
+      } else if(sec.type==="note"){
+        html += "<div class='help-note'"+ce+" data-field='content' data-id='"+sec.id+"'>"+parseBold(sec.content)+"</div>";
+      } else if(sec.type==="formula"){
+        html += "<pre class='help-formula'"+ce+" data-field='content' data-id='"+sec.id+"' style='white-space:pre-wrap;margin:0'>"+sec.content+"</pre>";
+      } else if(sec.type==="table"){
+        html += "<div style='overflow-x:auto'><table class='help-table'><thead><tr>";
+        sec.headers.forEach(function(h,hi){
+          html += "<th"+ce+" data-field='header' data-id='"+sec.id+"' data-idx='"+hi+"'>"+parseBold(h)+"</th>";
+        });
+        html += "</tr></thead><tbody>";
+        sec.rows.forEach(function(row,ri){
+          html += "<tr>";
+          row.forEach(function(cell,ci){
+            html += "<td"+ce+" data-field='cell' data-id='"+sec.id+"' data-row='"+ri+"' data-col='"+ci+"'>"+parseBold(cell)+"</td>";
+          });
+          html += "</tr>";
+        });
+        html += "</tbody></table></div>";
+      }
+      html += "</div>";
+    });
+    return html;
+  }
+
+  function syncFromDOM(){
+    document.querySelectorAll("#helpBody [data-field]").forEach(function(el){
+      var id=el.dataset.id, field=el.dataset.field;
+      var sec=HELP_CONTENT.sections.find(function(s){ return s.id===id; });
+      if(!sec) return;
+      var val = el.innerText;
+      if(field==="heading") sec.heading=val;
+      else if(field==="content") sec.content=val;
+      else if(field==="header") sec.headers[+el.dataset.idx]=val;
+      else if(field==="cell") sec.rows[+el.dataset.row][+el.dataset.col]=val;
+    });
+  }
+
+  function render(editable){
+    document.getElementById("helpBody").innerHTML = buildContent(editable);
+  }
+
+  function setEditMode(on){
+    editMode = on;
+    var btn = document.getElementById("editToggleBtn");
+    var banner = document.getElementById("editBanner");
+    var footer = document.getElementById("helpFooter");
+    var dlOk = document.getElementById("dlOk");
+    btn.textContent = on ? "👁 보기" : "✏️ 편집";
+    btn.classList.toggle("active", on);
+    banner.classList.toggle("show", on);
+    footer.style.display = on ? "flex" : "none";
+    dlOk.classList.remove("show");
+    render(on);
+  }
+
+  function downloadHTML(){
+    syncFromDOM();
+    var src = document.documentElement.outerHTML;
+    var startMarker = "/* ================================================================\n   \u2605 \uc774 \ube14\ub85d\ub9cc \uc218\uc815\ud558\uc138\uc694 (HELP_CONTENT START)\n   ================================================================ */";
+    var endMarker = "/* ================================================================\n   \u2605 \uc774 \ube14\ub85d\ub9cc \uc218\uc815\ud558\uc138\uc694 (HELP_CONTENT END)\n}; // end HELP_CONTENT\n   ================================================================ */";
+    var newBlock = "const HELP_CONTENT = " + JSON.stringify(HELP_CONTENT, null, 2) + ";\n" + endMarker;
+    var parts1 = src.split(startMarker);
+    if(parts1.length < 2){ alert("마커를 찾을 수 없습니다."); return; }
+    var parts2 = parts1[1].split(endMarker);
+    if(parts2.length < 2){ alert("마커를 찾을 수 없습니다."); return; }
+    var newSrc = parts1[0] + startMarker + "\n" + newBlock + parts2[1];
+    var blob = new Blob([newSrc], {type:"text/html;charset=utf-8"});
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "index.html";
+    a.click();
+    document.getElementById("dlOk").classList.add("show");
+  }
+
+  window.addEventListener("DOMContentLoaded", function(){
+    var modal = document.getElementById("helpModal");
+    var helpBtn = document.getElementById("helpBtn");
+    var helpClose = document.getElementById("helpClose");
+    var editToggleBtn = document.getElementById("editToggleBtn");
+    var resetHelpBtn = document.getElementById("resetHelpBtn");
+    var dlBtn = document.getElementById("dlBtn");
+
+    function openModal(){
+      setEditMode(false);
+      modal.classList.add("open");
+    }
+    function closeModal(){
+      if(editMode) syncFromDOM();
+      modal.classList.remove("open");
+    }
+
+    helpBtn.addEventListener("click", openModal);
+    helpClose.addEventListener("click", closeModal);
+    modal.addEventListener("click", function(e){ if(e.target===modal) closeModal(); });
+    editToggleBtn.addEventListener("click", function(){
+      if(editMode) syncFromDOM();
+      setEditMode(!editMode);
+    });
+    resetHelpBtn.addEventListener("click", function(){
+      if(!confirm("도움말 내용을 초기 상태로 되돌리겠습니까?")) return;
+      HELP_CONTENT.sections = JSON.parse(JSON.stringify(ORIGINAL.sections));
+      render(true);
+    });
+    dlBtn.addEventListener("click", downloadHTML);
+  });
+})();
+
+/* ===== IEEE Std 80-2013 calculation engine ===== */
+const MATERIALS = {
+  cu_annealed:{name:"Copper, Annealed Soft-Drawn",ar:0.00393,Ko:234,Tm:1083,rhor:1.72,TCAP:3.4},
+  cu_hard:{name:"Copper, Commercial Hard-Drawn",ar:0.00381,Ko:242,Tm:1084,rhor:1.78,TCAP:3.4},
+  ccs_40:{name:"Copper-Clad Steel Wire (40%)",ar:0.00378,Ko:245,Tm:1084,rhor:4.40,TCAP:3.8},
+  ccs_30:{name:"Copper-Clad Steel Wire (30%)",ar:0.00378,Ko:245,Tm:1084,rhor:5.86,TCAP:3.8},
+  ccs_rod_20:{name:"Copper-Clad Steel Rod (20%)",ar:0.00378,Ko:245,Tm:1084,rhor:8.62,TCAP:3.8},
+  al_ec:{name:"Aluminum, EC Grade",ar:0.00403,Ko:228,Tm:657,rhor:2.86,TCAP:2.56},
+  al_5005:{name:"Aluminum, 5005 Alloy",ar:0.00353,Ko:263,Tm:652,rhor:3.22,TCAP:2.60},
+  al_6201:{name:"Aluminum, 6201 Alloy",ar:0.00347,Ko:268,Tm:654,rhor:3.28,TCAP:2.60},
+  alclad:{name:"Aluminum-Clad Steel Wire",ar:0.00360,Ko:258,Tm:657,rhor:8.48,TCAP:3.58},
+  steel_1020:{name:"Steel, 1020",ar:0.00160,Ko:605,Tm:1510,rhor:15.90,TCAP:3.28},
+  ss_clad_rod:{name:"Stainless-Clad Steel Rod",ar:0.00160,Ko:605,Tm:1400,rhor:17.50,TCAP:4.44},
+  zinc_rod:{name:"Zinc-Coated Steel Rod",ar:0.00320,Ko:293,Tm:419,rhor:20.1,TCAP:3.93},
+  ss_304:{name:"Stainless Steel, 304",ar:0.00130,Ko:749,Tm:1400,rhor:72.0,TCAP:4.03},
+};
+
+function compute(inp){
+  const o={}; const num=v=>(v===""||v==null||isNaN(Number(v)))?NaN:Number(v);
+  // Step 2
+  const I=num(inp.I),Ta=num(inp.Ta),tc=num(inp.tc);
+  const m=MATERIALS[inp.material]||MATERIALS.cu_annealed;
+  o.Tm=m.Tm;o.Tr=20;o.ar=m.ar;o.rhor=m.rhor;o.Ko=m.Ko;o.TCAP=m.TCAP;
+  o.AmmReq=I/Math.sqrt(((m.TCAP*1e-4)/(tc*m.ar*m.rhor))*Math.log((m.Ko+m.Tm)/(m.Ko+Ta)));
+  o.Amm=inp.userArea?num(inp.Amm):o.AmmReq;
+  o.d=Math.sqrt((4*o.Amm)/Math.PI)/1000;
+  // Step 3
+  const rho=num(inp.rho),rhos=num(inp.rhos),hs=num(inp.hs);
+  const ts=inp.tsUser?num(inp.ts):tc; o.ts=ts;
+  o.Cs=(Math.abs(rhos-rho)<1e-9)?1:(1-(0.09*(1-rho/rhos))/(2*hs+0.09));
+  const kBody=(num(inp.bodyWeight)===70)?0.157:0.116;
+  o.Estep=(1000+6*o.Cs*rhos)*kBody/Math.sqrt(ts);
+  o.Etouch=(1000+1.5*o.Cs*rhos)*kBody/Math.sqrt(ts);
+  // Step 4
+  const Lx=num(inp.Lx),Ly=num(inp.Ly),D=num(inp.D);
+  o.A=Lx*Ly; o.Lp=2*(Lx+Ly); o.Dm=Math.sqrt(Lx*Lx+Ly*Ly); o.LC=num(inp.LC);
+  o.na=(2*o.LC)/o.Lp;
+  o.nb=Math.sqrt(o.Lp/(4*Math.sqrt(o.A)));
+  o.nc=Math.pow((Lx*Ly)/o.A,(0.7*o.A)/(Lx*Ly));
+  o.nd=o.Dm/Math.sqrt(Lx*Lx+Ly*Ly);
+  o.n=o.na*o.nb*o.nc*o.nd;
+  // Step 5
+  const h=num(inp.h); o.LR=num(inp.LR)||0; o.LT=o.LC+o.LR;
+  o.Rg=rho*(1/o.LT+(1/Math.sqrt(20*o.A))*(1+1/(1+h*Math.sqrt(20/o.A))));
+  // Step 6
+  const If=num(inp.If),Sf=num(inp.Sf),Df=num(inp.Df);
+  o.Ig=Sf*If; o.IG=Df*o.Ig;
+  // Step 7
+  o.GPR=o.IG*o.Rg; o.gprPass=o.GPR<o.Etouch;
+  // Step 8
+  const corners=inp.rodArrangement==="corners"; const Lr=num(inp.Lr);
+  o.Kii=corners?1:1/Math.pow(2*o.n,2/o.n);
+  o.Kh=Math.sqrt(1+h/1);
+  const t1=Math.log((D*D)/(16*h*o.d)+Math.pow(D+2*h,2)/(8*D*o.d)-h/(4*o.d));
+  const t2=(o.Kii/o.Kh)*Math.log(8/(Math.PI*(2*o.n-1)));
+  o.Km=(1/(2*Math.PI))*(t1+t2);
+  o.Ki=0.644+0.148*o.n;
+  o.LM=corners?o.LC+(1.55+1.22*(Lr/Math.sqrt(Lx*Lx+Ly*Ly)))*o.LR:o.LC+o.LR;
+  o.Em=(rho*o.IG*o.Km*o.Ki)/o.LM;
+  o.Ks=(1/Math.PI)*(1/(2*h)+1/(D+h)+(1/D)*(1-Math.pow(0.5,o.n-2)));
+  o.LS=0.75*o.LC+0.85*o.LR;
+  o.Es=(rho*o.IG*o.Ks*o.Ki)/o.LS;
+  // Step 9 & 10
+  o.meshPass=o.Em<o.Etouch; o.stepPass=o.Es<o.Estep;
+  return o;
+}
+
+/* ===== UI wiring ===== */
+const $=id=>document.getElementById(id);
+const EX={rho:308.87,I:40,Ta:40,tc:0.2,material:"cu_annealed",userArea:true,Amm:120,
+  rhos:10000,hs:0.3,tsUser:false,ts:0.2,bodyWeight:50,Lx:95,Ly:310,D:17,LC:3900,
+  h:0.8,LR:0,If:40000,Sf:0.08,Df:1.064,rodArrangement:"few",Lr:0};
+
+// build material dropdown
+const matSel=$("material");
+Object.entries(MATERIALS).forEach(([k,v])=>{
+  const op=document.createElement("option"); op.value=k; op.textContent=v.name; matSel.appendChild(op);
+});
+
+function nf(x,d,thou){ if(x==null||isNaN(x))return"–";
+  let s=Number(x).toFixed(d);
+  if(thou){const p=s.split(".");p[0]=p[0].replace(/\B(?=(\d{3})+(?!\d))/g,",");s=p.join(".");}
+  return s;
+}
+
+function readInputs(){
+  return {
+    rho:$("rho").value, I:$("I").value, Ta:$("Ta").value, tc:$("tc").value,
+    material:$("material").value, userArea:$("userArea").checked, Amm:$("Amm").value,
+    rhos:$("rhos").value, hs:$("hs").value, tsUser:$("tsUser").checked, ts:$("ts").value,
+    bodyWeight:$("bodyWeight").value, Lx:$("Lx").value, Ly:$("Ly").value, D:$("D").value, LC:$("LC").value,
+    h:$("h").value, LR:$("LR").value, If:$("If").value, Sf:$("Sf").value, Df:$("Df").value,
+    rodArrangement:$("rodArrangement").value, Lr:$("Lr").value
+  };
+}
+
+function badge(el,pass){
+  el.textContent=pass?"PASS":"FAIL";
+  el.className=el.className.replace(/\b(pass|fail)\b/g,"").trim()+" "+(pass?"pass":"fail");
+}
+
+function recalc(){
+  const inp=readInputs();
+  // dependent enable/disable
+  $("Amm").disabled=!inp.userArea;
+  $("ts").disabled=!inp.tsUser;
+  $("Lr").disabled=inp.rodArrangement!=="corners";
+  const o=compute(inp);
+
+  // Step 1
+  $("A").textContent=nf(o.A,1,true);
+  // Step 2
+  $("Tm").textContent=nf(o.Tm,0); $("Tr").textContent=nf(o.Tr,0);
+  $("ar").textContent=nf(o.ar,5); $("rhor").textContent=nf(o.rhor,2);
+  $("Ko").textContent=nf(o.Ko,0); $("TCAP").textContent=nf(o.TCAP,2);
+  $("AmmReq").textContent=nf(o.AmmReq,2);
+  if(!inp.userArea) $("Amm").value=nf(o.Amm,1);
+  $("d").textContent=nf(o.d,6);
+  // Step 3
+  $("rho3").textContent=nf(Number(inp.rho),2);
+  $("Cs").textContent=nf(o.Cs,4);
+  $("Estep").textContent=nf(o.Estep,1,true); $("Etouch").textContent=nf(o.Etouch,1,true);
+  if(!inp.tsUser) $("ts").value=nf(o.ts,3);
+  // Step 4
+  $("A4").textContent=nf(o.A,1,true); $("Lp").textContent=nf(o.Lp,1,true);
+  $("Dm").textContent=nf(o.Dm,2); $("n").textContent=nf(o.n,4);
+  $("nanb").textContent=nf(o.na,4)+" / "+nf(o.nb,4);
+  $("ncnd").textContent=nf(o.nc,4)+" / "+nf(o.nd,4);
+  // Step 5
+  $("LT").textContent=nf(o.LT,1,true); $("Rg").textContent=nf(o.Rg,4);
+  // Step 6
+  $("Ig").textContent=nf(o.Ig,1,true); $("IG").textContent=nf(o.IG,1,true);
+  // Step 7
+  $("GPR").textContent=nf(o.GPR,1,true); $("Etouch7").textContent=nf(o.Etouch,1,true);
+  // Step 8
+  $("Kii").textContent=nf(o.Kii,4); $("Kh").textContent=nf(o.Kh,4); $("Ki").textContent=nf(o.Ki,4);
+  $("LM").textContent=nf(o.LM,1,true); $("Km").textContent=nf(o.Km,4); $("Em").textContent=nf(o.Em,1,true);
+  $("LS").textContent=nf(o.LS,1,true); $("Ks").textContent=nf(o.Ks,4); $("Es").textContent=nf(o.Es,1,true);
+  // Step 9 & 10
+  $("Em9").textContent=nf(o.Em,1,true); $("Etouch9").textContent=nf(o.Etouch,1,true);
+  $("Es10").textContent=nf(o.Es,1,true); $("Estep10").textContent=nf(o.Estep,1,true);
+
+  // requirements + verdict
+  badge($("r-gpr"),o.gprPass); badge($("p-gpr"),o.gprPass);
+  badge($("r-mesh"),o.meshPass); badge($("p-mesh"),o.meshPass);
+  badge($("r-step"),o.stepPass); badge($("p-step"),o.stepPass);
+  $("v-gpr").textContent=nf(o.GPR,0,true)+" / "+nf(o.Etouch,0,true)+" V";
+  $("v-mesh").textContent=nf(o.Em,0,true)+" / "+nf(o.Etouch,0,true)+" V";
+  $("v-step").textContent=nf(o.Es,0,true)+" / "+nf(o.Estep,0,true)+" V";
+
+  drawGrid(Number(inp.Lx),Number(inp.Ly),Number(inp.D));
+}
+
+function drawGrid(Lx,Ly,D){
+  const svg=$("gridSvg"); if(!svg)return;
+  const W=170,H=240,pad=26;
+  if(!(Lx>0&&Ly>0)){svg.innerHTML="";return;}
+  const aw=W-2*pad, ah=H-2*pad;
+  const s=Math.min(aw/Lx,ah/Ly);
+  const gw=Lx*s, gh=Ly*s;
+  const ox=(W-gw)/2, oy=(H-gh)/2;
+  const nx=Math.max(1,Math.round(Lx/D)), ny=Math.max(1,Math.round(Ly/D));
+  let p=`<rect x="${ox}" y="${oy}" width="${gw}" height="${gh}" fill="#eef2ff" stroke="#4f46e5" stroke-width="1.6"/>`;
+  for(let i=1;i<nx;i++){const x=ox+gw*i/nx; p+=`<line x1="${x}" y1="${oy}" x2="${x}" y2="${oy+gh}" stroke="#a5b4fc" stroke-width="0.7"/>`;}
+  for(let j=1;j<ny;j++){const y=oy+gh*j/ny; p+=`<line x1="${ox}" y1="${y}" x2="${ox+gw}" y2="${y}" stroke="#a5b4fc" stroke-width="0.7"/>`;}
+  p+=`<text x="${ox+gw/2}" y="${oy-9}" font-size="10" fill="#4f46e5" text-anchor="middle">Lx ${Lx} m</text>`;
+  p+=`<text x="${ox-9}" y="${oy+gh/2}" font-size="10" fill="#4f46e5" text-anchor="middle" transform="rotate(-90 ${ox-9} ${oy+gh/2})">Ly ${Ly} m</text>`;
+  svg.innerHTML=p;
+  $("dx").textContent=Lx; $("dy").textContent=Ly;
+  $("dmesh").textContent=nx+" × "+ny;
+  $("dsp").textContent=D;
+}
+
+// material change -> reset constants display happens in recalc
+$("main").addEventListener("input",recalc);
+$("main").addEventListener("change",recalc);
+
+$("showAll").addEventListener("change",e=>{
+  $("main").classList.toggle("detail-hidden",!e.target.checked);
+});
+
+$("resetBtn").addEventListener("click",()=>{
+  for(const [k,v] of Object.entries(EX)){
+    const el=$(k); if(!el)continue;
+    if(el.type==="checkbox") el.checked=v; else el.value=v;
+  }
+  $("showAll").checked=true; $("main").classList.remove("detail-hidden");
+  recalc();
+});
+
+recalc();
+</script>
+</body>
+</html>
