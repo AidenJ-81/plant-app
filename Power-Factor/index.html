@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Power Factor</title>
+<style>
+  :root{
+    --blue:#2563eb; --blue-dark:#1d4ed8; --blue-700:#1e40af;
+    --ink:#1e293b; --muted:#64748b; --label:#334155;
+    --bg:#eef2f7; --card:#ffffff; --border:#e7eaf0; --line:#eef2f7;
+    --amber:#b45309; --green:#065f46;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Malgun Gothic","Apple SD Gothic Neo",Roboto,sans-serif;
+    font-size:14px; -webkit-font-smoothing:antialiased; }
+  .appbar{ display:flex; align-items:center; justify-content:space-between;
+    padding:14px 26px; color:#fff;
+    background:linear-gradient(102deg,#0a1628 0%, #0f2044 50%, #152850 100%);
+    box-shadow:0 2px 12px rgba(0,0,0,.45); }
+  .brand{ display:flex; align-items:center; gap:14px; }
+  .logo{ width:42px; height:42px; border-radius:11px; display:flex; align-items:center; justify-content:center;
+    background:rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.18); }
+  .title{ font-size:22px; font-weight:800; letter-spacing:.2px; line-height:1.1; }
+  .sub{ font-size:12.5px; color:rgba(255,255,255,.60); margin-top:3px; }
+  .helpbtn{ font-size:13px; font-weight:600; padding:7px 20px; border-radius:6px; cursor:pointer;
+    background:rgba(255,255,255,.15); border:1.5px solid rgba(255,255,255,.75); color:#fff;
+    transition:background .15s, border-color .15s; letter-spacing:.1px; }
+  .helpbtn:hover{ background:rgba(255,255,255,.25); border-color:#fff; }
+  .header-right{ display:flex; align-items:center; gap:10px; }
+  .layout{ display:grid; grid-template-columns:368px 1fr; gap:18px; padding:20px; max-width:1380px; align-items:start; }
+  .col-left{ display:flex; flex-direction:column; gap:14px; }
+  .card{ background:var(--card); border:1px solid var(--border); border-radius:14px; padding:18px 18px 16px;
+    box-shadow:0 1px 3px rgba(15,23,42,.06); }
+  .cardhead{ display:flex; align-items:center; gap:9px; margin-bottom:14px; }
+  .badge{ width:25px; height:25px; border-radius:8px; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(#3470f2,#2056d8); color:#fff; font-size:12px; font-weight:800;
+    box-shadow:0 1px 2px rgba(37,99,235,.45); }
+  .cardhead .t{ font-size:13px; font-weight:800; color:var(--ink); letter-spacing:.2px; }
+  .field{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin:11px 0; }
+  .field > .lab{ color:var(--label); font-size:13px; font-weight:500; }
+  .field > .lab .sym{ color:var(--blue); font-weight:700; margin-left:3px; }
+  .control{ display:flex; align-items:center; gap:7px; }
+  .subnote{ font-size:11.5px; color:var(--muted); margin:-5px 0 11px; text-align:right; }
+  .note{ font-size:12px; color:var(--amber); margin:8px 0 2px; line-height:1.5; }
+  input[type=text], select{
+    font:inherit; font-size:13px; color:var(--ink); background:#fff;
+    border:1px solid #d1d5db; border-radius:8px; padding:7px 10px;
+    transition:border-color .12s, box-shadow .12s; }
+  input[type=text]{ width:120px; text-align:right; }
+  select{ width:210px; }
+  input:focus, select:focus{ border-color:var(--blue); box-shadow:0 0 0 3px rgba(37,99,235,.15); outline:none; }
+  input:disabled, input[readonly]{ background:#f1f5f9; color:#94a3b8; cursor:not-allowed; }
+  .unit{ color:var(--muted); font-size:12px; min-width:54px; }
+  .derived{ display:inline-block; min-width:118px; text-align:right; font-size:13px; font-weight:600;
+    color:var(--blue-700); background:#f1f5f9; border:1px solid #e2e8f0; border-radius:8px; padding:7px 10px; }
+  .run{ margin-top:2px; width:100%; padding:13px; border:none; border-radius:11px; cursor:pointer;
+    background:linear-gradient(#3470f2,#1f54d6); color:#fff; font-size:15px; font-weight:700;
+    box-shadow:0 3px 9px rgba(37,99,235,.32); transition:filter .12s, transform .05s; }
+  .run:hover{ filter:brightness(1.06); }
+  .run:active{ transform:translateY(1px); }
+  .resultcard{ min-height:520px; }
+  .rhead{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .rhead .t{ font-size:16px; font-weight:800; }
+  .rhead .hint{ font-size:12px; color:var(--muted); }
+  table{ width:100%; border-collapse:separate; border-spacing:0; font-size:13.5px; overflow:hidden;
+    border-radius:11px; border:1px solid #e5e9f0; }
+  thead th{ background:linear-gradient(#2f6bf0,#2257d6); color:#fff; font-weight:600; padding:12px 14px; text-align:right; white-space:nowrap; }
+  thead th:first-child{ text-align:left; }
+  thead th small{ display:block; font-weight:400; opacity:.8; font-size:11px; }
+  tbody td{ padding:12px 14px; text-align:right; border-bottom:1px solid var(--line); color:var(--ink); }
+  tbody tr:last-child td{ border-bottom:none; }
+  tbody td:first-child{ text-align:left; }
+  tbody tr:nth-child(even){ background:#f8fafc; }
+  .itemcell .nm{ font-weight:600; }
+  .itemcell .sy{ color:var(--muted); font-size:12px; margin-left:6px; }
+  td.val{ font-variant-numeric:tabular-nums; }
+  .hl{ background:#eff5ff !important; }
+  .hl td{ font-weight:700; color:var(--blue-700); }
+  .empty{ display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:74px 20px; color:#94a3b8; text-align:center; gap:16px; }
+  .empty svg{ color:#cbd5e1; }
+  .empty p{ margin:0; line-height:1.7; }
+  .banner{ margin-top:16px; display:flex; align-items:center; gap:11px; padding:13px 16px; border-radius:11px;
+    background:#ecfdf5; border:1px solid #a7f3d0; color:var(--green); font-size:13.5px; }
+  .banner b{ color:#047857; }
+  .banner .chk{ width:22px; height:22px; flex:none; border-radius:50%; background:#10b981; color:#fff;
+    display:flex; align-items:center; justify-content:center; font-size:13px; }
+  .formula{ margin-top:18px; padding-top:14px; border-top:1px dashed #e2e8f0; color:var(--muted);
+    font-size:11.5px; line-height:1.7; }
+  .formula code{ background:#f1f5f9; padding:1px 5px; border-radius:5px; color:#475569; font-size:11px; }
+  .wm{ position:fixed; inset:0; pointer-events:none; z-index:1; overflow:hidden; opacity:.035; }
+  .wm span{ position:absolute; transform:rotate(-30deg); white-space:nowrap; font-size:13px; color:#1d3f73; }
+  .layout, .appbar{ position:relative; z-index:2; }
+
+  /* Modal */
+  .modal-overlay{ position:fixed; inset:0; background:rgba(15,23,42,.52); z-index:1000;
+    display:flex; align-items:center; justify-content:center; padding:20px; backdrop-filter:blur(2px); }
+  .modal{ background:#fff; border-radius:18px; width:100%; max-width:700px; max-height:88vh;
+    display:flex; flex-direction:column; box-shadow:0 24px 60px rgba(15,23,42,.22); overflow:hidden; }
+  .modal-header{ display:flex; align-items:center; justify-content:space-between;
+    padding:18px 22px 14px; border-bottom:1px solid #e7eaf0; flex-shrink:0; }
+  .modal-header-left{ display:flex; align-items:center; gap:10px; }
+  .modal-title{ font-size:17px; font-weight:800; color:var(--ink); }
+  .modal-close{ width:32px; height:32px; border-radius:8px; border:none; cursor:pointer;
+    background:#f1f5f9; color:var(--muted); font-size:18px; display:flex; align-items:center;
+    justify-content:center; transition:background .12s; line-height:1; }
+  .modal-close:hover{ background:#e2e8f0; color:var(--ink); }
+  .modal-body{ overflow-y:auto; padding:20px 22px; flex:1; }
+  .modal-footer{ padding:14px 22px; border-top:1px solid #e7eaf0; display:flex; align-items:center;
+    justify-content:space-between; gap:10px; flex-shrink:0; flex-wrap:wrap; }
+  .edit-banner{ background:#fef9c3; border-bottom:1px solid #fde047; padding:10px 22px;
+    font-size:12.5px; color:#713f12; display:flex; align-items:center; gap:8px; flex-shrink:0; }
+  .mbtn{ font-size:13px; font-weight:600; padding:8px 16px; border-radius:9px; border:none;
+    cursor:pointer; transition:filter .12s, background .12s; display:inline-flex; align-items:center; gap:6px; }
+  .mbtn-outline{ background:#f1f5f9; color:var(--ink); border:1px solid #d1d5db; }
+  .mbtn-outline:hover{ background:#e2e8f0; }
+  .mbtn-blue{ background:linear-gradient(#3470f2,#1f54d6); color:#fff; box-shadow:0 2px 7px rgba(37,99,235,.28); }
+  .mbtn-blue:hover{ filter:brightness(1.07); }
+  .mbtn-amber{ background:#fffbeb; color:#92400e; border:1px solid #fcd34d; }
+  .mbtn-amber:hover{ background:#fef3c7; }
+  .mbtn-green{ background:#ecfdf5; color:#065f46; border:1px solid #6ee7b7; }
+  .mbtn-green:hover{ background:#d1fae5; }
+  .dl-ok{ font-size:12.5px; color:#047857; font-weight:600; display:flex; align-items:center; gap:5px; }
+  .h-section{ margin-bottom:22px; }
+  .h-section-title{ font-size:14px; font-weight:800; color:var(--ink); margin:0 0 9px;
+    padding-bottom:6px; border-bottom:2px solid #eff5ff; }
+  .h-text{ font-size:13.5px; line-height:1.78; color:#334155; margin:0; }
+  .h-note{ font-size:13px; line-height:1.72; color:#92400e; background:#fffbeb;
+    border:1px solid #fde68a; border-radius:9px; padding:11px 14px; margin:0; }
+  .h-formula{ font-size:12.5px; line-height:1.85; color:#475569; background:#f8fafc;
+    border:1px solid #e2e8f0; border-radius:9px; padding:12px 14px; margin:0; font-family:monospace; }
+  .h-table{ width:100%; border-collapse:separate; border-spacing:0; font-size:13px;
+    border-radius:10px; overflow:hidden; border:1px solid #e5e9f0; margin:0; }
+  .h-table thead th{ background:linear-gradient(#2f6bf0,#2257d6); color:#fff; font-weight:600;
+    padding:10px 13px; text-align:left; }
+  .h-table tbody td{ padding:10px 13px; border-bottom:1px solid #eef2f7; color:var(--ink); vertical-align:top; }
+  .h-table tbody tr:last-child td{ border-bottom:none; }
+  .h-table tbody tr:nth-child(even){ background:#f8fafc; }
+  .edit-mode [contenteditable="true"]{
+    outline:2px dashed #fbbf24; border-radius:4px; cursor:text; background:rgba(254,249,195,.4); }
+  .edit-mode [contenteditable="true"]:focus{
+    outline:2px solid #f59e0b; background:rgba(254,249,195,.7); }
+  @media (max-width:880px){
+    .layout{ grid-template-columns:1fr; }
+    select{ width:200px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="appbar">
+  <div class="brand">
+    <div class="logo">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="#fff"><path d="M7 2v10h3v10l7-13h-4l4-7z"/></svg>
+    </div>
+    <div>
+      <div class="title">Power Factor</div>
+      <div class="sub">역률 개선 · 콘덴서 용량 산정 · Power Factor Correction (cos θ)</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <button class="helpbtn" id="helpOpenBtn">도움말</button>
+  </div>
+</header>
+
+<main class="layout">
+  <section class="col-left">
+    <div class="card">
+      <div class="cardhead"><span class="badge">01</span><span class="t">설계 조건 (DESIGN CONDITION)</span></div>
+      <div class="field">
+        <span class="lab">Active Power <span class="sym">P</span></span>
+        <span class="control"><input id="P" type="text" value="11525" inputmode="decimal"><span class="unit">kW</span></span>
+      </div>
+      <div class="subnote" id="P_mw"></div>
+      <div class="field">
+        <span class="lab">Supply Power <span class="sym">Ps</span></span>
+        <span class="control"><input id="Ps" type="text" value="12882" inputmode="decimal"><span class="unit">kVA</span></span>
+      </div>
+      <div class="field">
+        <span class="lab">Required Power Factor <span class="sym">cos θ'</span></span>
+        <span class="control"><input id="ct" type="text" value="0.95" inputmode="decimal"><span class="unit">—</span></span>
+      </div>
+      <div class="note">※ 입력값은 설비 명판·계측값으로 재확인하세요.</div>
+    </div>
+    <div class="card">
+      <div class="cardhead"><span class="badge">02</span><span class="t">콘덴서 옵션 (CAPACITOR)</span></div>
+      <div class="field">
+        <span class="lab">산정 방식 <span class="sym">Qc</span></span>
+        <span class="control">
+          <select id="qcMode">
+            <option value="auto">Auto (목표 cos θ' 기준)</option>
+            <option value="user">User 지정 (Qc 입력)</option>
+          </select>
+        </span>
+      </div>
+      <div class="field">
+        <span class="lab">Capacitor Capacity <span class="sym">Qc</span></span>
+        <span class="control"><input id="qc" type="text" inputmode="decimal" readonly><span class="unit">kVAR</span></span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="cardhead"><span class="badge">03</span><span class="t">자동 산정값 — 개선 전 (AUTO-DERIVED)</span></div>
+      <div class="field">
+        <span class="lab">Apparent Power <span class="sym">Pa</span></span>
+        <span class="control"><span class="derived" id="d_Pa">—</span><span class="unit">kVA</span></span>
+      </div>
+      <div class="field">
+        <span class="lab">Power Factor <span class="sym">cos θ</span></span>
+        <span class="control"><span class="derived" id="d_pf">—</span><span class="unit">—</span></span>
+      </div>
+      <div class="field">
+        <span class="lab">Reactive Power <span class="sym">Pr</span></span>
+        <span class="control"><span class="derived" id="d_Pr">—</span><span class="unit">kVAR</span></span>
+      </div>
+    </div>
+    <button class="run" id="runBtn">검토 실행 →</button>
+  </section>
+  <section>
+    <div class="card resultcard">
+      <div class="rhead">
+        <span class="t">검토 결과</span>
+        <span class="hint" id="rhint">개선 전 → 개선 후 비교</span>
+      </div>
+      <div id="emptyView" class="empty">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 13a9 9 0 0 1 18 0"/>
+          <line x1="12" y1="13" x2="16.5" y2="8.5"/>
+          <circle cx="12" cy="13" r="1.4" fill="currentColor" stroke="none"/>
+          <line x1="3" y1="13" x2="4.5" y2="13"/><line x1="19.5" y1="13" x2="21" y2="13"/>
+        </svg>
+        <p>입력값을 확인하고 <b>검토 실행</b>을 누르면<br>개선 전·후 역률과 필요 콘덴서 용량(Qc)이 표시됩니다.</p>
+      </div>
+      <div id="resultView" style="display:none">
+        <table>
+          <thead>
+            <tr>
+              <th>항목 / Item</th><th>Before</th><th>After</th><th>Difference</th><th>Diff. %</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="itemcell"><span class="nm">피상전력</span><span class="sy">Pa (kVA)</span></td>
+              <td class="val" id="Pa_b"></td><td class="val" id="Pa_a"></td><td class="val" id="Pa_d"></td><td class="val" id="Pa_p"></td>
+            </tr>
+            <tr>
+              <td class="itemcell"><span class="nm">역률</span><span class="sy">cos θ</span></td>
+              <td class="val" id="pf_b"></td><td class="val" id="pf_a"></td><td class="val" id="pf_d"></td><td class="val" id="pf_p"></td>
+            </tr>
+            <tr>
+              <td class="itemcell"><span class="nm">무효전력</span><span class="sy">Pr (kVAR)</span></td>
+              <td class="val" id="Pr_b"></td><td class="val" id="Pr_a"></td><td class="val" id="Pr_d"></td><td class="val" id="Pr_p"></td>
+            </tr>
+            <tr class="hl">
+              <td class="itemcell"><span class="nm">콘덴서 용량</span><span class="sy">Qc (kVAR)</span></td>
+              <td class="val" id="Qc_b"></td><td class="val" id="Qc_a"></td><td class="val" id="Qc_d"></td><td class="val">—</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="banner"><span class="chk">✓</span><span id="bn"></span></div>
+      </div>
+      <div class="formula">
+        계산식: <code>cos θ = P / Pa</code> · <code>Pr = √(Pa² − P²)</code> · 개선 후 <code>Pa' = P / cos θ'</code> ,
+        <code>Pr' = √(Pa'² − P²)</code> · 필요 콘덴서 <code>Qc = Pr − Pr'</code>.
+        User 모드에서는 입력한 Qc로 <code>Pr' = Pr − Qc</code>, <code>cos θ' = P / √(P² + Pr'²)</code> 를 역산합니다.
+        모든 값은 참고용이며 적용 규격으로 검증 필요.
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="wm" id="wm"></div>
+
+<!-- HELP MODAL -->
+<div id="helpModal" class="modal-overlay" style="display:none" onclick="HelpModal.handleOverlayClick(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="edit-banner" id="editBanner" style="display:none">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      <strong>편집 모드:</strong> 텍스트 또는 표 셀을 클릭하면 바로 수정할 수 있습니다.
+    </div>
+    <div class="modal-header">
+      <div class="modal-header-left">
+        <div class="badge">?</div>
+        <span class="modal-title" id="modalTitle">도움말</span>
+      </div>
+      <button class="modal-close" onclick="HelpModal.close()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-footer">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="mbtn mbtn-outline" id="editBtn" onclick="HelpModal.toggleEdit()">✏️ 편집</button>
+        <button class="mbtn mbtn-amber" id="resetBtn" onclick="HelpModal.reset()" style="display:none">↩ 초기화</button>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <button class="mbtn mbtn-green" id="dlBtn" onclick="HelpModal.download()" style="display:none">💾 저장 후 다운로드 (index.html)</button>
+        <span class="dl-ok" id="dlOk" style="display:none">✅ 다운로드 완료!</span>
+        <button class="mbtn mbtn-blue" onclick="HelpModal.close()">닫기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// ✂︎ 이 블록만 수정하세요 ——————————————————————————————————
+// ============================================================
+const HELP_CONTENT = {
+  title: "Power Factor 도움말",
+  sections: [
+    {
+      id: "overview",
+      heading: "앱 개요",
+      type: "text",
+      body: "**Power Factor · Web v2.5**는 전기 설비의 **역률 개선(Power Factor Correction)**을 위한 콘덴서(커패시터) 용량을 산정하는 웹 도구입니다. 유효전력(P)과 공급 피상전력(Ps)을 입력하면 현재 역률을 자동 계산하고, 목표 역률 달성에 필요한 콘덴서 용량(Qc)을 산출합니다. 서버 없이 브라우저에서 바로 실행됩니다."
+    },
+    {
+      id: "inputs",
+      heading: "입력 항목 설명",
+      type: "table",
+      headers: ["항목", "기호", "단위", "설명"],
+      rows: [
+        ["유효전력", "P", "kW", "부하에서 실제 소비되는 전력. 설비 명판 또는 계측값을 입력합니다."],
+        ["공급 피상전력", "Ps", "kVA", "수전 계약 또는 변압기 공급 용량. P보다 크거나 같아야 합니다."],
+        ["목표 역률", "cos θ'", "—", "개선 후 달성하려는 역률 목표값 (0 초과 1 이하). Auto 모드에서만 사용됩니다."],
+        ["콘덴서 용량", "Qc", "kVAR", "User 모드에서는 직접 입력. Auto 모드에서는 목표 역률로 자동 계산됩니다."]
+      ]
+    },
+    {
+      id: "modes",
+      heading: "산정 방식 (Auto / User)",
+      type: "text",
+      body: "**Auto 모드**: 목표 역률(cos θ')를 입력하면 필요한 콘덴서 용량(Qc)을 자동 계산합니다.\n**User 모드**: 설치 가능한 콘덴서 용량(Qc)을 직접 입력하면 개선 후 역률을 역산합니다."
+    },
+    {
+      id: "formula",
+      heading: "계산식 요약",
+      type: "formula",
+      body: "개선 전:  cos θ = P / Ps  ·  Pr = sqrt(Ps^2 - P^2)\nAuto 모드: Pa' = P / cos θ'  ·  Pr' = sqrt(Pa'^2 - P^2)  ·  Qc = Pr - Pr'\nUser 모드: Pr' = Pr - Qc  ·  Pa' = sqrt(P^2 + Pr'^2)  ·  cos θ' = P / Pa'"
+    },
+    {
+      id: "caution",
+      heading: "주의사항",
+      type: "note",
+      body: "⚠️ 본 결과는 **예비 검토 목적**으로만 사용하십시오. 실제 적용 시에는 KEC, IEC, 설비 명판 등 관련 규격 및 전문가 검토를 반드시 거치시기 바랍니다. 입력값은 설비 명판·계측값으로 재확인하세요."
+    }
+  ]
+// ============================================================
+// ✂︎ 이 블록의 끝 — 위 블록만 수정하세요
+// ============================================================
+}; // end HELP_CONTENT
+
+function parseBold(text) {
+  var parts = text.split("**");
+  var out = "";
+  for (var i = 0; i < parts.length; i++) {
+    if (i % 2 === 1) out += "<strong>" + parts[i] + "</strong>";
+    else out += parts[i];
+  }
+  return out;
+}
+
+function renderSection(sec, editMode) {
+  var ce = editMode ? " contenteditable=\"true\"" : "";
+  var html = "<div class=\"h-section\" data-id=\"" + sec.id + "\">";
+  html += "<div class=\"h-section-title\"" + ce + ">" + sec.heading + "</div>";
+  if (sec.type === "text") {
+    var lines = sec.body.split("\n");
+    var bodyHtml = lines.map(function(l){ return parseBold(l); }).join("<br>");
+    html += "<p class=\"h-text\"" + ce + ">" + bodyHtml + "</p>";
+  } else if (sec.type === "note") {
+    html += "<p class=\"h-note\"" + ce + ">" + parseBold(sec.body) + "</p>";
+  } else if (sec.type === "formula") {
+    var fHtml = sec.body.split("\n").map(function(l){ return parseBold(l); }).join("<br>");
+    html += "<div class=\"h-formula\"" + ce + ">" + fHtml + "</div>";
+  } else if (sec.type === "table") {
+    html += "<table class=\"h-table\"><thead><tr>";
+    sec.headers.forEach(function(h){ html += "<th" + ce + ">" + h + "</th>"; });
+    html += "</tr></thead><tbody>";
+    sec.rows.forEach(function(row){
+      html += "<tr>";
+      row.forEach(function(cell){ html += "<td" + ce + ">" + cell + "</td>"; });
+      html += "</tr>";
+    });
+    html += "</tbody></table>";
+  }
+  html += "</div>";
+  return html;
+}
+
+var HelpModal = (function(){
+  var _editMode = false;
+  var _dlTimer = null;
+
+  function _renderBody(editMode) {
+    var body = document.getElementById("modalBody");
+    body.className = "modal-body" + (editMode ? " edit-mode" : "");
+    var html = "";
+    HELP_CONTENT.sections.forEach(function(sec){ html += renderSection(sec, editMode); });
+    body.innerHTML = html;
+  }
+
+  function open() {
+    _editMode = false;
+    document.getElementById("helpModal").style.display = "flex";
+    document.getElementById("modalTitle").textContent = HELP_CONTENT.title;
+    document.getElementById("editBanner").style.display = "none";
+    document.getElementById("editBtn").textContent = "✏️ 편집";
+    document.getElementById("resetBtn").style.display = "none";
+    document.getElementById("dlBtn").style.display = "none";
+    document.getElementById("dlOk").style.display = "none";
+    _renderBody(false);
+  }
+
+  function close() {
+    document.getElementById("helpModal").style.display = "none";
+    _editMode = false;
+  }
+
+  function handleOverlayClick(e) {
+    if (e.target === document.getElementById("helpModal")) close();
+  }
+
+  function toggleEdit() {
+    _editMode = !_editMode;
+    document.getElementById("editBanner").style.display = _editMode ? "flex" : "none";
+    document.getElementById("editBtn").textContent = _editMode ? "👁 보기" : "✏️ 편집";
+    document.getElementById("resetBtn").style.display = _editMode ? "inline-flex" : "none";
+    document.getElementById("dlBtn").style.display = _editMode ? "inline-flex" : "none";
+    document.getElementById("dlOk").style.display = "none";
+    _renderBody(_editMode);
+  }
+
+  function reset() {
+    if (!confirm("도움말을 원래 내용으로 초기화하시겠습니까?")) return;
+    _renderBody(true);
+  }
+
+  function _syncFromDOM() {
+    var body = document.getElementById("modalBody");
+    HELP_CONTENT.sections.forEach(function(sec){
+      var wrapper = body.querySelector("[data-id='" + sec.id + "']");
+      if (!wrapper) return;
+      var headEl = wrapper.querySelector(".h-section-title");
+      if (headEl) sec.heading = headEl.textContent;
+      if (sec.type === "text" || sec.type === "note") {
+        var el = wrapper.querySelector(".h-text, .h-note");
+        if (el) {
+          sec.body = el.innerHTML
+            .split("<br>").join("\n")
+            .split("<strong>").join("**")
+            .split("</strong>").join("**")
+            .replace(/<[^>]+>/g, "");
+        }
+      } else if (sec.type === "formula") {
+        var fel = wrapper.querySelector(".h-formula");
+        if (fel) {
+          sec.body = fel.innerHTML
+            .split("<br>").join("\n")
+            .split("<strong>").join("**")
+            .split("</strong>").join("**")
+            .replace(/<[^>]+>/g, "");
+        }
+      } else if (sec.type === "table") {
+        var ths = wrapper.querySelectorAll(".h-table thead th");
+        sec.headers = [];
+        ths.forEach(function(th){ sec.headers.push(th.textContent); });
+        var trs = wrapper.querySelectorAll(".h-table tbody tr");
+        sec.rows = [];
+        trs.forEach(function(tr){
+          var cells = tr.querySelectorAll("td");
+          var row = [];
+          cells.forEach(function(td){ row.push(td.textContent); });
+          sec.rows.push(row);
+        });
+      }
+    });
+  }
+
+  function _serializeVal(val, indent) {
+    if (typeof val === "string") return JSON.stringify(val);
+    if (Array.isArray(val)) {
+      if (val.length === 0) return "[]";
+      if (typeof val[0] !== "object") {
+        return "[" + val.map(function(v){ return JSON.stringify(v); }).join(", ") + "]";
+      }
+      var inner = val.map(function(item){
+        return indent + "  " + _serializeVal(item, indent + "  ");
+      }).join(",\n");
+      return "[\n" + inner + "\n" + indent + "]";
+    }
+    if (typeof val === "object" && val !== null) {
+      var keys = Object.keys(val);
+      var lines = keys.map(function(k){
+        return indent + "  " + k + ": " + _serializeVal(val[k], indent + "  ");
+      });
+      return "{\n" + lines.join(",\n") + "\n" + indent + "}";
+    }
+    return String(val);
+  }
+
+  function download() {
+    _syncFromDOM();
+
+    var startComment = "// ============================================================\n// \u2702\ufe6b \uc774 \ube14\ub85d\ub9cc \uc218\uc815\ud558\uc138\uc694 \u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\n// ============================================================\n";
+    var endComment = "// ============================================================\n// \u2702\ufe6b \uc774 \ube14\ub85d\uc758 \ub05d \u2014 \uc704 \ube14\ub85d\ub9cc \uc218\uc815\ud558\uc138\uc694\n// ============================================================\n";
+    var endMarker = "}; // end HELP_CONTENT";
+
+    var newContent = startComment + "const HELP_CONTENT = " + _serializeVal(HELP_CONTENT, "") + ";\n" + endComment + endMarker;
+
+    var src = document.documentElement.outerHTML;
+
+    var splitOnStart = src.split(startComment + "const HELP_CONTENT");
+    if (splitOnStart.length < 2) { alert("HELP_CONTENT 시작 블록을 찾을 수 없습니다."); return; }
+    var afterStart = splitOnStart[1];
+    var splitOnEnd = afterStart.split(endMarker);
+    if (splitOnEnd.length < 2) { alert("HELP_CONTENT 끝 마커를 찾을 수 없습니다."); return; }
+
+    var rebuilt = splitOnStart[0] + newContent + splitOnEnd.slice(1).join(endMarker);
+
+    var doctype = "<!DOCTYPE html>\n";
+    var body = rebuilt.replace(/^<!DOCTYPE html>\n?/i, "");
+    var blob = new Blob([doctype + body], {type: "text/html;charset=utf-8"});
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "index.html";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+
+    document.getElementById("dlOk").style.display = "flex";
+    if (_dlTimer) clearTimeout(_dlTimer);
+    _dlTimer = setTimeout(function(){ document.getElementById("dlOk").style.display = "none"; }, 5000);
+  }
+
+  return { open:open, close:close, handleOverlayClick:handleOverlayClick, toggleEdit:toggleEdit, reset:reset, download:download };
+})();
+
+document.getElementById("helpOpenBtn").addEventListener("click", function(){ HelpModal.open(); });
+document.addEventListener("keydown", function(e){ if (e.key === "Escape") HelpModal.close(); });
+
+// ===== Original App Logic =====
+const $ = id => document.getElementById(id);
+function num(id){ const v = parseFloat($(id).value); return isFinite(v) ? v : NaN; }
+function f(x, dec){ return isFinite(x) ? x.toLocaleString("en-US",{minimumFractionDigits:dec,maximumFractionDigits:dec}) : ""; }
+function setCell(id, x, dec, signed){
+  const el = $(id);
+  if (!isFinite(x)) { el.textContent = ""; return; }
+  let s = f(x, dec);
+  if (signed && x > 0) s = "+" + s;
+  el.textContent = s;
+}
+let hasRun = false;
+
+function syncMode(){
+  const user = $("qcMode").value === "user";
+  $("ct").disabled = user;
+  $("qc").readOnly = !user;
+}
+
+function deriveBefore(){
+  const P = num("P"), Ps = num("Ps");
+  $("P_mw").textContent = isFinite(P) ? "= " + f(P/1000, 3) + " MW" : "";
+  if (!(P > 0) || !(Ps > 0)) { $("d_Pa").textContent="—"; $("d_pf").textContent="—"; $("d_Pr").textContent="—"; return; }
+  const pf_b = Math.min(P/Ps, 1);
+  const Pr_b = Math.sqrt(Math.max(Ps*Ps - P*P, 0));
+  $("d_Pa").textContent = f(Ps, 1);
+  $("d_pf").textContent = f(pf_b, 4);
+  $("d_Pr").textContent = f(Pr_b, 1);
+}
+
+function runCalc(){
+  const P = num("P"), Ps = num("Ps"), ct = num("ct"), qcIn = num("qc"), mode = $("qcMode").value;
+  if (!(P > 0) || !(Ps > 0)) { $("rhint").textContent = "P, Ps 값을 입력하세요."; return; }
+  if (Ps < P) { $("rhint").textContent = "⚠ 피상전력 Ps는 유효전력 P보다 커야 합니다."; }
+  else        { $("rhint").textContent = "개선 전 → 개선 후 비교"; }
+  const Pa_b = Ps;
+  const pf_b = Math.min(P/Ps, 1);
+  const Pr_b = Math.sqrt(Math.max(Ps*Ps - P*P, 0));
+  let Pa_a, pf_a, Pr_a, Qc;
+  if (mode === "user") {
+    Qc = isFinite(qcIn) ? qcIn : 0;
+    Pr_a = Pr_b - Qc;
+    Pa_a = Math.sqrt(P*P + Pr_a*Pr_a);
+    pf_a = P / Pa_a;
+  } else {
+    if (!(ct > 0 && ct <= 1)) { $("rhint").textContent = "목표 역률 cos θ' 는 0~1 이어야 합니다."; return; }
+    pf_a = ct;
+    Pa_a = P / ct;
+    Pr_a = Math.sqrt(Math.max(Pa_a*Pa_a - P*P, 0));
+    Qc = Pr_b - Pr_a;
+    $("qc").value = f(Qc, 1);
+  }
+  setCell("Pa_b", Pa_b, 1); setCell("Pa_a", Pa_a, 1); setCell("Pa_d", Pa_a-Pa_b, 1, true); setCell("Pa_p", (Pa_a-Pa_b)/Pa_b*100, 2, true);
+  setCell("pf_b", pf_b, 4); setCell("pf_a", pf_a, 4); setCell("pf_d", pf_a-pf_b, 4, true); setCell("pf_p", (pf_a-pf_b)/pf_b*100, 2, true);
+  setCell("Pr_b", Pr_b, 1); setCell("Pr_a", Pr_a, 1); setCell("Pr_d", Pr_a-Pr_b, 1, true); setCell("Pr_p", (Pr_a-Pr_b)/Pr_b*100, 2, true);
+  setCell("Qc_b", 0, 1);    setCell("Qc_a", Qc, 1);   setCell("Qc_d", Qc, 1, true);
+  $("bn").innerHTML = "역률 cos θ <b>" + f(pf_b,4) + "</b> → <b>" + f(pf_a,4) + "</b> 개선 · 필요 콘덴서 용량 <b>Qc = " + f(Qc,1) + " kVAR</b>";
+  $("emptyView").style.display = "none";
+  $("resultView").style.display = "block";
+  hasRun = true;
+}
+
+["P","Ps","ct","qc"].forEach(id => $(id).addEventListener("input", () => { deriveBefore(); if (hasRun) runCalc(); }));
+$("qcMode").addEventListener("change", () => { syncMode(); deriveBefore(); if (hasRun) runCalc(); });
+$("runBtn").addEventListener("click", runCalc);
+
+(function(){
+  const wm = $("wm"), txt = "Power Factor · Web v2.5";
+  for (let r=-1; r<10; r++) for (let c=0; c<7; c++){
+    const s = document.createElement("span");
+    s.textContent = txt; s.style.top = (r*120+40)+"px"; s.style.left = (c*300-60)+"px";
+    wm.appendChild(s);
+  }
+})();
+
+syncMode();
+deriveBefore();
+</script>
+</body>
+</html>
