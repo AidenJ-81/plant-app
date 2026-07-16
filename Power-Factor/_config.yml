@@ -1,7 +1,0 @@
-# GitHub Pages 기본 설정
-title: "Power Factor · Web v2.5"
-description: "역률 개선 · 콘덴서 용량 산정 · Power Factor Correction (cos θ)"
-lang: ko
-
-# Jekyll 빌드 없이 index.html을 그대로 서빙
-plugins: []
